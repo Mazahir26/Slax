@@ -12,6 +12,7 @@ const colors = [
   "#bde0fe",
   "#a2d2ff",
   "#f08080",
+  "#123f55",
   "#ff686b",
   "#f2bac9",
   "#ffc09f",
@@ -52,6 +53,7 @@ export default function List({
                 {isThereABirthdayThisMonth.date.format("MMMM")}{" "}
                 {year.format("YYYY")}
               </Heading>
+
               <VStack px="2" width={"full"}>
                 {newArray.map((day, index) => {
                   if (
@@ -90,7 +92,7 @@ export default function List({
                 bg={colorMode === "dark" ? "gray.600" : "white"}
               >
                 <Text m="2" fontSize={"lg"} fontWeight="semibold">
-                  No Birthdays this month :(
+                  No Birthdays this month 🙁
                 </Text>
               </Box>
             </>

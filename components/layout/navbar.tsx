@@ -31,7 +31,6 @@ export default function Navbar() {
           </Heading>
         </Box>
         <Spacer />
-
         {session ? (
           <Box>
             <Button
