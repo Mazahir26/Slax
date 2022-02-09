@@ -94,7 +94,7 @@ const Home: NextPage = (props) => {
             <Button
               borderRadius={"3xl"}
               leftIcon={<AddIcon />}
-              colorScheme="blue"
+              colorScheme={"brand"}
               variant="outline"
               onClick={() => onOpen()}
             >

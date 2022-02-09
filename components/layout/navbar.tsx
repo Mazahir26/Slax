@@ -15,23 +15,25 @@ export default function Navbar() {
   const { data: session } = useSession();
   const { toggleColorMode, colorMode } = useColorMode();
   return (
-    <Box boxShadow="inner" rounded="md" bg="white">
-      <Flex bg={"#5E7CE2"} h="10vh" alignItems={"center"}>
-        <Box mx={"10"} my={"4"}>
-          <Heading color={"whiteAlpha.800"} size={"lg"}>
-            Darkest Labs
+    <Box
+      h="10vh"
+      bg={colorMode == "dark" ? "gray.700" : "gray.100"}
+      alignItems={"stretch"}
+    >
+      <Flex
+        bg={colorMode === "dark" ? "gray.600" : "white"}
+        boxShadow="lg"
+        alignItems={"center"}
+      >
+        <Box mx={"5"} my={"4"}>
+          <Heading variant={"logo"} size={"lg"}>
+            Slax
           </Heading>
         </Box>
         <Spacer />
-        <Box mx="8">
-          <IconButton
-            aria-label="Toggle dark mode"
-            icon={colorMode === "dark" ? <SunIcon /> : <MoonIcon />}
-            onClick={() => toggleColorMode()}
-          />
-        </Box>
+
         {session ? (
-          <Box mx="8">
+          <Box>
             <Button
               onClick={() => signOut()}
               colorScheme={"gray"}
@@ -41,16 +43,20 @@ export default function Navbar() {
             </Button>
           </Box>
         ) : (
-          <Box mx="8">
-            <Button
-              onClick={() => signIn()}
-              ringColor={"gray"}
-              colorScheme={"gray"}
-            >
+          <Box>
+            <Button onClick={() => signIn()} colorScheme={"brand"}>
               Sign up
             </Button>
           </Box>
         )}
+        <Box mx="4">
+          <IconButton
+            colorScheme={"brand"}
+            aria-label="Toggle dark mode"
+            icon={colorMode === "dark" ? <SunIcon /> : <MoonIcon />}
+            onClick={() => toggleColorMode()}
+          />
+        </Box>
       </Flex>
     </Box>
   );
