@@ -16,6 +16,7 @@ import {
   Box,
   Heading,
   IconButton,
+  useColorMode,
 } from "@chakra-ui/react";
 import moment from "moment";
 import type { NextPage } from "next";
@@ -48,12 +49,13 @@ const Home: NextPage = (props) => {
   const [events, setEvents] = useState<event[]>();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [currentYear, setCurrentYear] = useState(moment());
+  const { colorMode } = useColorMode();
 
   return (
     <>
       <Flex
         flexDirection={"column"}
-        bg="gray.100"
+        bg={colorMode == "dark" ? "gray.700" : "gray.100"}
         align={"start"}
         width={"full"}
         h={"90vh"}
@@ -63,7 +65,7 @@ const Home: NextPage = (props) => {
           alignContent={"center"}
           borderRadius="lg"
           boxShadow="md"
-          bg="white"
+          bg={colorMode == "dark" ? "gray.600" : "white"}
           p={"4"}
           m="2"
         >
