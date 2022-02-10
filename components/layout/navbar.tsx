@@ -8,9 +8,10 @@ import {
   useColorMode,
   Switch,
   IconButton,
-  Link,
 } from "@chakra-ui/react";
 import { useSession, signIn, signOut } from "next-auth/react";
+import Link from "next/link";
+
 // import NextLink from "next/link";
 export default function Navbar() {
   const { data: session } = useSession();
@@ -27,7 +28,12 @@ export default function Navbar() {
         alignItems={"center"}
       >
         <Link href="/">
-          <Box mx={"5"} my={"4"}>
+          <Box
+            _focus={{ boxShadow: "none", color: "brand.100" }}
+            as="button"
+            mx={"5"}
+            my={"4"}
+          >
             <Heading variant={"logo"} size={"lg"}>
               Slax
             </Heading>
@@ -40,24 +46,40 @@ export default function Navbar() {
             <Button
               onClick={() => signOut()}
               colorScheme={"gray"}
-              variant={"link"}
+              variant={"ghost"}
             >
               Sign Out
             </Button>
           </Box>
         ) : (
           <Box>
-            <Button onClick={() => signIn()} colorScheme={"brand"}>
+            <Button
+              onClick={() => signIn()}
+              variant="solid"
+              colorScheme={"brand"}
+            >
               Sign up
             </Button>
           </Box>
         )}
-        <Box mx="4">
+        <Button
+          mx="2"
+          onClick={() => signIn()}
+          variant="ghost"
+          colorScheme={"brand"}
+        >
+          About
+        </Button>
+        <Box mx="2">
           <IconButton
+            variant={"ghost"}
             colorScheme={"brand"}
             aria-label="Toggle dark mode"
             icon={colorMode === "dark" ? <SunIcon /> : <MoonIcon />}
             onClick={() => toggleColorMode()}
+            _focus={{
+              boxShadow: "outline",
+            }}
           />
         </Box>
       </Flex>
