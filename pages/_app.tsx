@@ -7,6 +7,7 @@ import "@fontsource/quicksand/400.css";
 const theme = extendTheme({
   colors: {
     brand: {
+      50: "#",
       100: "#9fccfa",
       200: "#8ec2f9",
       300: "#7eb8f8",
@@ -20,7 +21,7 @@ const theme = extendTheme({
     components: {
       Heading: {
         variants: {
-          'logo': {
+          logo: {
             fontFamily: "quicksand",
           },
         },

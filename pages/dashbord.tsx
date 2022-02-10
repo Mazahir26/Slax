@@ -39,7 +39,8 @@ const Home: NextPage<{ isConnected: boolean }> = ({ isConnected = true }) => {
         h={"90vh"}
         flexDirection={"column"}
         bg={colorMode == "dark" ? "gray.700" : "gray.100"}
-        align={"start"}
+        justifyContent="center"
+        alignItems={"center"}
       >
         <Heading>You need to sign up</Heading>
       </Flex>
@@ -70,38 +71,38 @@ const Home: NextPage<{ isConnected: boolean }> = ({ isConnected = true }) => {
   );
 };
 
-// interface eventData {
-//   name: string;
-//   date: Date;
-//   user: string;
-// }
+interface eventData {
+  name: string;
+  date: Date;
+  user: string;
+}
 
-// export async function getServerSideProps(context: GetServerSidePropsContext) {
-//   try {
-//     const user = await getSession(context);
-//     if (!user?.user?.email) {
-//       return {
-//         props: { isConnected: true },
-//       };
-//     }
-//     const cli = await client;
-//     const database = cli.db("Data");
-//     const data = database.collection<eventData>("reminders");
-//     const result = await data.insertOne({
-//       date: moment().toDate(),
-//       user: user.user.email,
-//       name: "mazahir",
-//     });
-//     console.log(`A document was inserted with the _id: ${result.insertedId}`);
-//     cli.close();
-//     return {
-//       props: { isConnected: true },
-//     };
-//   } catch (e) {
-//     console.error(e);
-//     return {
-//       props: { isConnected: false },
-//     };
-//   }
-// }
+export async function getServerSideProps(context: GetServerSidePropsContext) {
+  try {
+    const user = await getSession(context);
+    if (!user?.user?.email) {
+      return {
+        props: { isConnected: true },
+      };
+    }
+    const cli = await client;
+    const database = cli.db("Data");
+    const data = database.collection<eventData>("reminders");
+    const result = await data.insertOne({
+      date: moment().toDate(),
+      user: user.user.email,
+      name: "mazahir",
+    });
+    console.log(`A document was inserted with the _id: ${result.insertedId}`);
+    cli.close();
+    return {
+      props: { isConnected: true },
+    };
+  } catch (e) {
+    console.error(e);
+    return {
+      props: { isConnected: false },
+    };
+  }
+}
 export default Home;

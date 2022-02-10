@@ -14,25 +14,12 @@ import {
 } from "@chakra-ui/react";
 import type { GetServerSidePropsContext, NextPage } from "next";
 import client from "../lib/mongodb";
-import { getSession, useSession } from "next-auth/react";
+import { getSession, signIn, useSession } from "next-auth/react";
 
 const Home: NextPage = (props) => {
   const { data: session, status } = useSession();
   const { colorMode } = useColorMode();
 
-  if (status === "unauthenticated") {
-    return (
-      <Flex
-        width={"full"}
-        h={"90vh"}
-        flexDirection={"column"}
-        bg={colorMode == "dark" ? "gray.700" : "gray.100"}
-        align={"start"}
-      >
-        <Heading>You need to sign up</Heading>
-      </Flex>
-    );
-  }
   return (
     <>
       <Head>
@@ -46,7 +33,7 @@ const Home: NextPage = (props) => {
           as={Box}
           textAlign={"center"}
           spacing={{ base: 8, md: 14 }}
-          py={{ base: 20, md: 36 }}
+          py={{ base: "16", md: "32" }}
         >
           <Heading
             fontWeight={600}
@@ -56,11 +43,8 @@ const Home: NextPage = (props) => {
             Never forget birthdays <br />
             <Text
               as={"span"}
-              css={{
-                background: "-webkit-linear-gradient(45deg, #3494e6, #ec6ead)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
+              bgClip="text"
+              bgGradient="linear(to-tr, #3494e6, #ec6ead)"
             >
               of your loved ones.
             </Text>
@@ -85,10 +69,16 @@ const Home: NextPage = (props) => {
               _hover={{
                 bg: "brand.500",
               }}
+              onClick={() => signIn()}
             >
               Create an Account
             </Button>
-            <Button variant={"link"} colorScheme={"brand"} size={"sm"}>
+            <Button
+              onClick={() => signIn()}
+              variant={"link"}
+              colorScheme={"brand"}
+              size={"sm"}
+            >
               Sign in instead?
             </Button>
             <Box>
