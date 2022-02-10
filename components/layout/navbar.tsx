@@ -8,6 +8,7 @@ import {
   useColorMode,
   Switch,
   IconButton,
+  Link,
 } from "@chakra-ui/react";
 import { useSession, signIn, signOut } from "next-auth/react";
 // import NextLink from "next/link";
@@ -25,11 +26,14 @@ export default function Navbar() {
         boxShadow="lg"
         alignItems={"center"}
       >
-        <Box mx={"5"} my={"4"}>
-          <Heading variant={"logo"} size={"lg"}>
-            Slax
-          </Heading>
-        </Box>
+        <Link href="/">
+          <Box mx={"5"} my={"4"}>
+            <Heading variant={"logo"} size={"lg"}>
+              Slax
+            </Heading>
+          </Box>
+        </Link>
+
         <Spacer />
         {session ? (
           <Box>

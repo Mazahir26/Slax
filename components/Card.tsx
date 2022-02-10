@@ -29,10 +29,9 @@ export default function Card({
           alignContent={"center"}
           flexDirection="column"
           w={["14", "16", "20"]}
+          mr="4"
         >
-          <Heading size={"lg"} mr="2">
-            {date.format("Do")}
-          </Heading>
+          <Heading size={"lg"}>{date.format("Do")}</Heading>
           {moment(date).set("year", currentDate.year()).format("L") ===
           moment().format("L") ? (
             <Box p="2" borderRadius={"md"} py="0.5" my="1" bg="brand.100">
@@ -40,7 +39,9 @@ export default function Card({
             </Box>
           ) : null}
         </Flex>
-      ) : null}
+      ) : (
+        <Box w={["14", "16", "20"]} mr="4" />
+      )}
       <Box
         flex={1}
         as="button"
