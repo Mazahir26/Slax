@@ -1,51 +1,141 @@
 import {
   Box,
   Button,
+  Flex,
   FormControl,
+  FormErrorMessage,
   FormLabel,
   Input,
   Modal,
   ModalBody,
   ModalCloseButton,
   ModalContent,
-  ModalFooter,
   ModalHeader,
   ModalOverlay,
 } from "@chakra-ui/react";
+import { Field, Form, Formik } from "formik";
 import moment from "moment";
-import { useState } from "react";
+import { useToast } from "@chakra-ui/react";
 export default function ({
   isOpen,
   onClose,
+  PushEvent,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  PushEvent: Function;
 }) {
-  const [startDate, setStartDate] = useState(moment());
-  const [error, setError] = useState({
-    err: "",
-    type: "",
-  });
+  const toast = useToast();
+
+  function validateName(value: string) {
+    let error;
+    if (!value) {
+      error = "Name is required";
+    }
+    return error;
+  }
+
+  function validateDate(value: moment.Moment) {
+    let error;
+    if (!moment(value).isValid()) {
+      error = "Invalid Date";
+    }
+    if (moment(value).isAfter(moment())) {
+      error = "Invalid Date";
+    }
+    return error;
+  }
+
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>Add a Birthday</ModalHeader>
         <ModalCloseButton />
-        <ModalBody></ModalBody>
-        <ModalFooter>
-          <Button
-            disabled={error.type != ""}
-            colorScheme={"brand"}
-            mr={3}
-            onClick={onClose}
+        <ModalBody>
+          <Formik
+            initialValues={{
+              name: "",
+              date: null,
+            }}
+            onSubmit={(values, actions) => {
+              PushEvent({
+                name: values.name,
+                date: moment(values.date),
+              });
+              actions.setSubmitting(false);
+              onClose();
+              toast({
+                position: "bottom-right",
+                title: "Birthday Added.",
+                status: "success",
+                description: `We will remind you to wish ${
+                  values.name
+                } on ${moment(values.date).format("MMM Do")} every year`,
+                duration: 5000,
+                isClosable: true,
+              });
+            }}
           >
-            Save
-          </Button>
-          <Button onClick={onClose} variant="ghost">
-            Close
-          </Button>
-        </ModalFooter>
+            {(props) => (
+              <Form>
+                <Field name="name" validate={validateName}>
+                  {({ field, form }: any) => (
+                    <FormControl
+                      isInvalid={form.errors.name && form.touched.name}
+                    >
+                      <FormLabel htmlFor="name">First name</FormLabel>
+                      <Input
+                        {...field}
+                        variant="flushed"
+                        id="name"
+                        placeholder="eg. Saitama"
+                      />
+
+                      <FormErrorMessage>{form.errors.name}</FormErrorMessage>
+                    </FormControl>
+                  )}
+                </Field>
+                <Box my="4" />
+                <Field name="date" validate={validateDate}>
+                  {({ field, form }: any) => (
+                    <FormControl
+                      isInvalid={form.errors.date && form.touched.date}
+                    >
+                      <FormLabel>Date</FormLabel>
+                      <Input
+                        {...field}
+                        id="date"
+                        type={"date"}
+                        variant={"flushed"}
+                      />
+                      <FormErrorMessage>{form.errors.date}</FormErrorMessage>
+                    </FormControl>
+                  )}
+                </Field>
+                <Flex
+                  mt="6"
+                  mb="2"
+                  flexDirection={"row"}
+                  justifyContent="flex-end"
+                >
+                  <Button
+                    colorScheme={"brand"}
+                    mr={3}
+                    isLoading={props.isSubmitting}
+                    type="submit"
+                  >
+                    Save
+                  </Button>
+
+                  <Button onClick={onClose} variant="ghost">
+                    Close
+                  </Button>
+                </Flex>
+              </Form>
+            )}
+          </Formik>
+        </ModalBody>
       </ModalContent>
     </Modal>
   );
@@ -67,12 +157,12 @@ export default function ({
 // <FormControl isRequired>
 //             <FormLabel>Name</FormLabel>
 //             <Input variant={"flushed"} placeholder="eg. Saitama" />
-//             <Box my="4" />
-//             <FormLabel>Date</FormLabel>
-//             <Input
-//               isInvalid={error.type === "date"}
-//               variant={"flushed"}
-//               value={startDate?.format("YYYY-MM-DD")}
+// <Box my="4" />
+// <FormLabel>Date</FormLabel>
+// <Input
+//   isInvalid={error.type === "date"}
+//   variant={"flushed"}
+//   value={startDate?.format("YYYY-MM-DD")}
 //               onChange={(event) => {
 //                 if (moment(event.target.value).isAfter(moment())) {
 //                   console.log("after");
