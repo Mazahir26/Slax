@@ -1,12 +1,14 @@
 import NextAuth from "next-auth";
 import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
-import clientPromise from "../../../lib/mongodb";
+import client from "../../../lib/mongodb";
 import EmailProvider from "next-auth/providers/email";
 import nodemailer from "nodemailer";
 export default NextAuth({
-  adapter: MongoDBAdapter(clientPromise),
+  adapter: MongoDBAdapter(client.connect()),
   secret: "cscshbccsbschbsch",
-
+  session: {
+    strategy: "jwt",
+  },
   providers: [
     EmailProvider({
       from: "***REMOVED***",
@@ -25,6 +27,7 @@ export default NextAuth({
           html: html({ url, host, email }),
         });
       },
+
       server: {
         host: "***REMOVED***",
         port: ***REMOVED***,
