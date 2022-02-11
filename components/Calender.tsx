@@ -42,14 +42,14 @@ export default function List({
       bg={colorMode == "dark" ? "gray.700" : "gray.100"}
       alignItems={"stretch"}
     >
-      {moment.months().map((month) => {
+      {moment.months().map((month, ind) => {
         const isThereABirthdayThisMonth = newArray.find(
           (o) => o.date.format("MMMM") === month
         );
         if (isThereABirthdayThisMonth)
           return (
-            <>
-              <Heading key={Math.random() * 344} mt="0.5" py="4" size="lg">
+            <Box key={(month + ind).toString()}>
+              <Heading mt="0.5" py="4" size="lg">
                 {isThereABirthdayThisMonth.date.format("MMMM")}{" "}
                 {year.format("YYYY")}
               </Heading>
@@ -62,6 +62,7 @@ export default function List({
                   ) {
                     return (
                       <Card
+                        key={(day.name + index).toString()}
                         currentDate={year}
                         name={day.name}
                         color={colors[(index + 1) % colors.length]}
@@ -77,11 +78,11 @@ export default function List({
                   }
                 })}
               </VStack>
-            </>
+            </Box>
           );
         else {
           return (
-            <>
+            <Box key={(month + ind).toString()}>
               <Heading mt="0.5" py="4" size="lg">
                 {month} {year.format("YYYY")}
               </Heading>
@@ -95,7 +96,7 @@ export default function List({
                   No Birthdays this month 🙁
                 </Text>
               </Box>
-            </>
+            </Box>
           );
         }
       })}
