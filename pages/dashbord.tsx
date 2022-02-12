@@ -37,7 +37,6 @@ const Home: NextPage<{ isConnected: boolean; data: eventData[] }> = ({
 
   async function addEvent(event: { name: string; date: moment.Moment }) {
     if (session?.user?.email) {
-      const csrfToken = await getCsrfToken();
       fetch("/api/createEvent", {
         method: "POST",
         headers: {
