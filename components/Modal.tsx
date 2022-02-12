@@ -56,7 +56,7 @@ export default function ({
           <Formik
             initialValues={{
               name: "",
-              date: null,
+              date: "",
             }}
             onSubmit={(values, actions) => {
               PushEvent({

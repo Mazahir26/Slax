@@ -1,10 +1,8 @@
 import { Box, Text, Heading, VStack, useColorMode } from "@chakra-ui/react";
 import moment from "moment";
 import Card from "./Card";
-type event = {
-  name: string;
-  date: moment.Moment;
-};
+import { event } from "./types";
+
 const colors = [
   "#cdb4db",
   "#ffc8dd",
