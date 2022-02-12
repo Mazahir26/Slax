@@ -13,11 +13,8 @@ import List from "../components/Calender";
 import TopBar from "../components/TopBar";
 import AddBirthdayModal from "../components/Modal";
 import client from "../lib/mongodb";
-import { getSession, useSession } from "next-auth/react";
-type event = {
-  name: string;
-  date: moment.Moment;
-};
+import { getCsrfToken, getSession, useSession } from "next-auth/react";
+import { eventData, event } from "../components/types";
 
 const Home: NextPage<{ isConnected: boolean; data: eventData[] }> = ({
   isConnected = true,
@@ -28,6 +25,8 @@ const Home: NextPage<{ isConnected: boolean; data: eventData[] }> = ({
       return {
         name: item.name,
         date: moment(item.date),
+        _id: item._id,
+        user: item.user,
       };
     })
   );
@@ -35,6 +34,22 @@ const Home: NextPage<{ isConnected: boolean; data: eventData[] }> = ({
   const [currentYear, setCurrentYear] = useState(moment());
   const { data: session, status } = useSession();
   const { colorMode } = useColorMode();
+
+  async function addEvent(event: { name: string; date: moment.Moment }) {
+    if (session?.user?.email) {
+      const csrfToken = await getCsrfToken();
+      fetch("/api/createEvent", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: event.name,
+          date: event.date.toISOString(),
+        }),
+      });
+    }
+  }
 
   if (status === "unauthenticated") {
     return (
@@ -79,22 +94,10 @@ const Home: NextPage<{ isConnected: boolean; data: eventData[] }> = ({
           onOpen={onOpen}
           setCurrentYear={setCurrentYear}
         />
-        <List
-          year={currentYear}
-          events={[
-            {
-              date: moment(),
-              name: "mazahir",
-            },
-            {
-              date: moment(),
-              name: "diddi",
-            },
-          ]}
-        />
+        <List year={currentYear} events={events} />
       </Flex>
       <AddBirthdayModal
-        PushEvent={(event: event) => setEvents([...events, event])}
+        PushEvent={addEvent}
         isOpen={isOpen}
         onClose={onClose}
       />
@@ -102,53 +105,42 @@ const Home: NextPage<{ isConnected: boolean; data: eventData[] }> = ({
   );
 };
 
-interface eventData {
-  name: string;
-  date: Date;
-  user: string;
+export async function getServerSideProps(context: GetServerSidePropsContext) {
+  try {
+    const session = await getSession(context);
+    if (!session?.user?.email) {
+      return {
+        props: { isConnected: true, data: [] },
+      };
+    }
+    const cli = await client;
+    const database = cli.db("Data");
+    const data = database.collection<eventData>("reminders");
+
+    const cursor = data.find(
+      {
+        user: session.user.email,
+      },
+      {
+        projection: { _id: 0, date: 1, name: 1, user: 1 },
+      }
+    );
+    if ((await cursor.count()) === 0) {
+      console.log("No documents found!");
+    }
+    const propsData = await cursor.toArray();
+    propsData.map((x) => {
+      x.date = moment(x.date).toISOString();
+    });
+    return {
+      props: { isConnected: true, data: propsData },
+    };
+  } catch (e) {
+    console.error(e);
+    return {
+      props: { isConnected: false, data: [] },
+    };
+  }
 }
-
-// export async function getServerSideProps(context: GetServerSidePropsContext) {
-//   try {
-//     const user = await getSession(context);
-//     if (!user?.user?.email) {
-//       return {
-//         props: { isConnected: true, data: [] },
-//       };
-//     }
-//     const cli = await client.connect();
-//     const database = cli.db("Data");
-//     const data = database.collection<eventData>("reminders");
-
-//     const cursor = data.find(
-//       {
-//         user: user.user.email,
-//       },
-//       {
-//         projection: { _id: 0, date: 1, name: 1, user: 1 },
-//       }
-//     );
-//     if ((await cursor.count()) === 0) {
-//       console.log("No documents found!");
-//     }
-//     const propsData: eventData[] = [];
-//     cursor.forEach((doc) => {
-//       propsData.push({
-//         date: doc.date,
-//         name: doc.name,
-//         user: doc.user,
-//       });
-//     });
-//     cli.close();
-//     return {
-//       props: { isConnected: true, data: propsData },
-//     };
-//   } catch (e) {
-//     console.error(e);
-//     return {
-//       props: { isConnected: false, data: [] },
-//     };
-//   }
-// }
 
 export default Home;
