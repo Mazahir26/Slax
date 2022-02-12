@@ -4,8 +4,7 @@ import client from "../../../lib/mongodb";
 import EmailProvider from "next-auth/providers/email";
 import nodemailer from "nodemailer";
 export default NextAuth({
-  adapter: MongoDBAdapter(client.connect()),
-  secret: "cscshbccsbschbsch",
+  adapter: MongoDBAdapter(client),
   session: {
     strategy: "jwt",
   },
