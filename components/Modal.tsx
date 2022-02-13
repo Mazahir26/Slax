@@ -4,6 +4,7 @@ import {
   Flex,
   FormControl,
   FormErrorMessage,
+  FormHelperText,
   FormLabel,
   Input,
   Modal,
@@ -15,6 +16,8 @@ import {
 } from "@chakra-ui/react";
 import { Field, Form, Formik } from "formik";
 import moment from "moment";
+import { useState } from "react";
+import ColorSelector from "./ColorSelector";
 export default function ({
   isOpen,
   onClose,
@@ -24,6 +27,18 @@ export default function ({
   onClose: () => void;
   PushEvent: Function;
 }) {
+  const [color, setColor] = useState("#a2d2ff");
+  const options = [
+    "#ffc8dd",
+    "#a2d2ff",
+    "#ff686b",
+    "#ffc09f",
+    "#b3e0a3",
+    "#98f5e1",
+    "#fea5be",
+    "#FFFFFF",
+  ];
+
   function validateName(value: string) {
     let error;
     if (!value) {
@@ -59,6 +74,7 @@ export default function ({
               PushEvent({
                 name: values.name,
                 date: moment(values.date),
+                color: color,
               });
               actions.setSubmitting(false);
               onClose();
@@ -96,10 +112,19 @@ export default function ({
                         type={"date"}
                         variant={"flushed"}
                       />
+                      <FormHelperText>Format : MM/DD/YYYY</FormHelperText>
+
                       <FormErrorMessage>{form.errors.date}</FormErrorMessage>
                     </FormControl>
                   )}
                 </Field>
+                <Box my="4" />
+                <FormLabel>Color</FormLabel>
+                <ColorSelector
+                  color={color}
+                  options={options}
+                  setColor={(color) => setColor(color)}
+                />
                 <Flex
                   mt="6"
                   mb="2"
