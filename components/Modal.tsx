@@ -15,7 +15,6 @@ import {
 } from "@chakra-ui/react";
 import { Field, Form, Formik } from "formik";
 import moment from "moment";
-import { useToast } from "@chakra-ui/react";
 export default function ({
   isOpen,
   onClose,
@@ -25,8 +24,6 @@ export default function ({
   onClose: () => void;
   PushEvent: Function;
 }) {
-  const toast = useToast();
-
   function validateName(value: string) {
     let error;
     if (!value) {
@@ -65,16 +62,6 @@ export default function ({
               });
               actions.setSubmitting(false);
               onClose();
-              toast({
-                position: "bottom-right",
-                title: "Birthday Added.",
-                status: "success",
-                description: `We will remind you to wish ${
-                  values.name
-                } on ${moment(values.date).format("MMM Do")} every year`,
-                duration: 5000,
-                isClosable: true,
-              });
             }}
           >
             {(props) => (
