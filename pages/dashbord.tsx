@@ -5,6 +5,7 @@ import {
   Box,
   Spinner,
   Heading,
+  useToast,
 } from "@chakra-ui/react";
 import moment from "moment";
 import type { GetServerSidePropsContext, NextPage } from "next";
@@ -14,8 +15,8 @@ import TopBar from "../components/TopBar";
 import AddBirthdayModal from "../components/Modal";
 import client from "../lib/mongodb";
 import { getCsrfToken, getSession, useSession } from "next-auth/react";
-import { eventData, event } from "../components/types";
-
+import { eventData, event, rawEvent } from "../components/types";
+import { InsertOneResult } from "mongodb";
 const Home: NextPage<{ isConnected: boolean; data: eventData[] }> = ({
   isConnected = true,
   data = [],
@@ -34,19 +35,51 @@ const Home: NextPage<{ isConnected: boolean; data: eventData[] }> = ({
   const [currentYear, setCurrentYear] = useState(moment());
   const { data: session, status } = useSession();
   const { colorMode } = useColorMode();
-
+  const toast = useToast();
   async function addEvent(event: { name: string; date: moment.Moment }) {
     if (session?.user?.email) {
-      fetch("/api/createEvent", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: event.name,
-          date: event.date.toISOString(),
-        }),
-      });
+      try {
+        const response = await fetch("/api/createEvent", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: event.name,
+            date: event.date.toISOString(),
+          }),
+        });
+
+        const body: InsertOneResult<rawEvent> = await response.json();
+        if (body.acknowledged) {
+          const insertData: event = {
+            _id: body.insertedId.toString(),
+            date: moment(event.date),
+            name: event.name,
+            user: session.user.email,
+          };
+          setEvents([...events, insertData]);
+        }
+        toast({
+          position: "bottom-right",
+          title: "Birthday Added.",
+          status: "success",
+          description: `We will remind you to wish ${event.name} on ${moment(
+            event.date
+          ).format("MMM Do")} every year`,
+          duration: 5000,
+          isClosable: true,
+        });
+      } catch (error) {
+        toast({
+          position: "bottom-right",
+          title: "Ops something went wrong!",
+          status: "error",
+          description: `Try again later..:(`,
+          duration: 5000,
+          isClosable: true,
+        });
+      }
     }
   }
 
