@@ -10,7 +10,6 @@ const colors = [
   "#bde0fe",
   "#a2d2ff",
   "#f08080",
-  "#123f55",
   "#ff686b",
   "#f2bac9",
   "#ffc09f",
@@ -25,9 +24,11 @@ const colors = [
 export default function List({
   events,
   year,
+  onClickEvent,
 }: {
   events: event[];
   year: moment.Moment;
+  onClickEvent: Function;
 }) {
   const { colorMode } = useColorMode();
   const newArray = events.sort((a, b) => {
@@ -60,10 +61,12 @@ export default function List({
                   ) {
                     return (
                       <Card
+                        onClick={(id) => onClickEvent(id)}
                         key={(day.name + index).toString()}
+                        id={day._id}
                         currentDate={year}
                         name={day.name}
-                        color={colors[(index + 1) % colors.length]}
+                        color={day.color}
                         date={day.date}
                         newDate={
                           index === 0
