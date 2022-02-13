@@ -1,4 +1,13 @@
-import { Box, Flex, Heading, Text, useColorMode } from "@chakra-ui/react";
+import { DeleteIcon, EditIcon } from "@chakra-ui/icons";
+import {
+  Box,
+  Flex,
+  Heading,
+  HStack,
+  IconButton,
+  Text,
+  useColorMode,
+} from "@chakra-ui/react";
 import moment from "moment";
 
 export default function Card({
@@ -7,12 +16,16 @@ export default function Card({
   date,
   newDate,
   currentDate,
+  id,
+  onClick,
 }: {
   color: string;
   name: string;
   date: moment.Moment;
   currentDate: moment.Moment;
   newDate: boolean;
+  id: string;
+  onClick: (id: string) => void;
 }) {
   const { colorMode } = useColorMode();
   return (
@@ -44,6 +57,7 @@ export default function Card({
       )}
       <Box
         flex={1}
+        onClick={() => onClick(id)}
         as="button"
         __css={{
           WebkitFilter: "brightness(100%)",
