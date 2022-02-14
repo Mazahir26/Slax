@@ -3,6 +3,14 @@ import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
 import client from "../../../lib/mongodb";
 import EmailProvider from "next-auth/providers/email";
 import nodemailer from "nodemailer";
+if (
+  !process.env.EMAIL_SERVER_HOST ||
+  !process.env.EMAIL_SERVER_PORT ||
+  !process.env.EMAIL_SERVER_USER ||
+  !process.env.EMAIL_SERVER_PASSWORD
+) {
+  throw Error("SMTP Credentials not found");
+}
 export default NextAuth({
   adapter: MongoDBAdapter(client),
   session: {
@@ -10,7 +18,6 @@ export default NextAuth({
   },
   providers: [
     EmailProvider({
-      from: "bejokerr26@gmail.com",
       async sendVerificationRequest({
         identifier: email,
         url,
@@ -28,12 +35,20 @@ export default NextAuth({
       },
 
       server: {
-        host: "smtp.gmail.com",
-        port: 465,
+        host: process.env.EMAIL_SERVER_HOST
+          ? process.env.EMAIL_SERVER_HOST
+          : "",
+        port: process.env.EMAIL_SERVER_PORT
+          ? parseInt(process.env.EMAIL_SERVER_PORT)
+          : 0,
         requireTLS: true,
         auth: {
-          pass: "23390247",
-          user: "bejokerr26@gmail.com",
+          pass: process.env.EMAIL_SERVER_USER
+            ? process.env.EMAIL_SERVER_USER
+            : "",
+          user: process.env.EMAIL_SERVER_PASSWORD
+            ? process.env.EMAIL_SERVER_PASSWORD
+            : "",
         },
       },
     }),
