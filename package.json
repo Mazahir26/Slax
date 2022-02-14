@@ -1,5 +1,5 @@
 {
-  "name": "birtday-reminder",
+  "name": "slax",
   "private": true,
   "scripts": {
     "dev": "next dev",
