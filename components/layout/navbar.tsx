@@ -6,7 +6,6 @@ import {
   Heading,
   Spacer,
   useColorMode,
-  Switch,
   IconButton,
 } from "@chakra-ui/react";
 import { useSession, signIn, signOut } from "next-auth/react";
