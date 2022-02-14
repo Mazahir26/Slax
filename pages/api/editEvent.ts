@@ -24,7 +24,7 @@ export default async function handler(
       code: 401,
     });
   if (req.method === "POST") {
-    if (!req.body._id) {
+    if (!req.body._id || !req.body.name || !req.body.date || !req.body.color) {
       return res.status(400).json({
         msg: "Bad Request",
         code: 400,
@@ -34,12 +34,25 @@ export default async function handler(
       const cli = await client;
       const database = cli.db("Data");
       const reminders = database.collection<rawEvent>("reminders");
-      const result = await reminders.deleteOne({
-        _id: new ObjectId(req.body._id),
-      });
+      const result = await reminders.updateOne(
+        {
+          _id: new ObjectId(req.body._id),
+        },
+        {
+          $set: {
+            name: req.body.name,
+            color: req.body.color,
+            date: new Date(req.body.date),
+          },
+        },
+        {
+          upsert: false,
+        }
+      );
       cli.close();
       return res.status(200).json(result);
     } catch (e) {
+      console.log(e);
       return res.status(500).json({
         msg: "Ops something went wrong",
         code: 500,
