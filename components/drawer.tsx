@@ -16,7 +16,7 @@ import {
 } from "@chakra-ui/react";
 import { Field, Form, Formik } from "formik";
 import moment from "moment";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { event } from "./types";
 import ColorSelector from "./ColorSelector";
 
@@ -24,13 +24,25 @@ export default function EditDrawer({
   isOpen,
   onClose,
   event,
+  onDelete,
+  onSave,
 }: {
   isOpen: boolean;
   onClose: () => void;
   event: event | null;
+  onDelete: (id: string) => void;
+  onSave: (event: event) => void;
 }) {
   const firstField = useRef();
-  const [color, setColor] = useState(event ? event?.color : "white");
+  const [color, setColor] = useState(event ? event?.color : "#a2d2ff");
+  useEffect(() => {
+    setColor(event ? event?.color : "#a2d2ff");
+  }, [event]);
+
+  if (!event) {
+    return <></>;
+  }
+
   function validateName(value: string) {
     let error;
     if (!value) {
@@ -61,10 +73,6 @@ export default function EditDrawer({
     "#FFFFFF",
   ];
 
-  if (!event) {
-    return <></>;
-  }
-
   return (
     <>
       <Drawer
@@ -81,16 +89,26 @@ export default function EditDrawer({
             date: event.date.format("YYYY-MM-DD"),
           }}
           onSubmit={(values, actions) => {
+            console.log("okkk");
+            onSave({
+              _id: event._id,
+              color: color,
+              date: moment(values.date),
+              name: values.name,
+              user: event.user,
+            });
             actions.setSubmitting(false);
             onClose();
           }}
         >
           {(props) => (
-            <DrawerContent>
-              <DrawerCloseButton />
-              <DrawerHeader borderBottomWidth="1px">Edit Birthday</DrawerHeader>
-              <DrawerBody>
-                <Form>
+            <Form>
+              <DrawerContent>
+                <DrawerCloseButton />
+                <DrawerHeader borderBottomWidth="1px">
+                  Edit Birthday
+                </DrawerHeader>
+                <DrawerBody>
                   <Field name="name" validate={validateName}>
                     {({ field, form }: any) => (
                       <FormControl
@@ -127,22 +145,36 @@ export default function EditDrawer({
                       </FormControl>
                     )}
                   </Field>
-                </Form>
-                <Box my="4" />
-                <FormLabel>Color</FormLabel>
-                <ColorSelector
-                  color={color}
-                  options={options}
-                  setColor={(color) => setColor(color)}
-                />
-              </DrawerBody>
-              <DrawerFooter borderTopWidth="1px">
-                <Button colorScheme={"red"} mr={3} onClick={onClose}>
-                  Delete
-                </Button>
-                <Button colorScheme="brand">Save</Button>
-              </DrawerFooter>
-            </DrawerContent>
+                  <Box my="4" />
+                  <FormLabel>Color</FormLabel>
+                  <ColorSelector
+                    color={color}
+                    options={options}
+                    setColor={(color) => setColor(color)}
+                  />
+                </DrawerBody>
+                <DrawerFooter borderTopWidth="1px">
+                  <Button
+                    colorScheme={"red"}
+                    mr={3}
+                    isLoading={props.isSubmitting}
+                    onClick={() => {
+                      onDelete(event._id);
+                      onClose();
+                    }}
+                  >
+                    Delete
+                  </Button>
+                  <Button
+                    isLoading={props.isSubmitting}
+                    type="submit"
+                    colorScheme="brand"
+                  >
+                    Save
+                  </Button>
+                </DrawerFooter>
+              </DrawerContent>
+            </Form>
           )}
         </Formik>
       </Drawer>

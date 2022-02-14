@@ -24,7 +24,6 @@ export default async function handler(
     });
   if (req.method === "POST") {
     if (!req.body.name || !req.body.date || !req.body.color) {
-      console.log(req.body.name, req.body.date);
       return res.status(400).json({
         msg: "Bad Request",
         code: 400,
