@@ -311,7 +311,7 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
         props: { isConnected: true, data: [] },
       };
     }
-    const cli = await client;
+    const cli = await client.connect();
     const database = cli.db("Data");
     const data = database.collection<eventData>("reminders");
 

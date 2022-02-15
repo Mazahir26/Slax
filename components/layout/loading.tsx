@@ -1,12 +1,9 @@
 import {
-  Box,
   Modal,
-  ModalBody,
-  ModalCloseButton,
   ModalContent,
-  ModalHeader,
   ModalOverlay,
   Spinner,
+  useColorMode,
 } from "@chakra-ui/react";
 export default function ({
   isOpen,
@@ -15,6 +12,8 @@ export default function ({
   isOpen: boolean;
   onClose: () => void;
 }) {
+  const { colorMode } = useColorMode();
+
   return (
     <Modal
       closeOnOverlayClick={false}
@@ -25,7 +24,7 @@ export default function ({
     >
       <ModalOverlay />
       <ModalContent
-        bg="#ffffffcc"
+        bg={colorMode === "dark" ? "#555555cc" : "#ffffffcc"}
         w={["20", "36", "44"]}
         h={["20", "36", "44"]}
         justifyContent="center"
