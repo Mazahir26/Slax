@@ -31,7 +31,7 @@ export default async function handler(
       });
     }
     try {
-      const cli = await client;
+      const cli = await client.connect();
       const database = cli.db("Data");
       const reminders = database.collection<rawEvent>("reminders");
       const result = await reminders.updateOne(

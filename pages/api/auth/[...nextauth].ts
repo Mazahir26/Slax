@@ -12,7 +12,7 @@ if (
   throw Error("SMTP Credentials not found");
 }
 export default NextAuth({
-  adapter: MongoDBAdapter(client),
+  adapter: MongoDBAdapter(client.connect()),
   session: {
     strategy: "jwt",
   },
