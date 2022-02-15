@@ -1,4 +1,13 @@
-import { Box, Text, Heading, VStack, useColorMode } from "@chakra-ui/react";
+import { AddIcon } from "@chakra-ui/icons";
+import {
+  Box,
+  Text,
+  Heading,
+  VStack,
+  useColorMode,
+  Flex,
+  Button,
+} from "@chakra-ui/react";
 import moment from "moment";
 import Card from "./Card";
 import { event } from "./types";
@@ -25,72 +34,104 @@ export default function List({
   events,
   year,
   onClickEvent,
+  view,
+  onClickAddBirthday,
 }: {
   events: event[];
   year: moment.Moment;
   onClickEvent: Function;
+  view: "month" | "agenda";
+  onClickAddBirthday: Function;
 }) {
   const { colorMode } = useColorMode();
   const newArray = events.sort((a, b) => {
     return moment(a.date).diff(b.date);
   });
 
-  return (
-    <VStack
-      p="6"
-      width={"full"}
-      bg={colorMode == "dark" ? "gray.700" : "gray.100"}
-      alignItems={"stretch"}
-    >
-      {newArray.map((item, index) => {
-        if (
-          index === 0 ||
-          (index != 0
-            ? true
-            : item.date.month() === newArray[index - 1].date.month())
-        ) {
-          return (
-            <Box>
-              <Heading mt="0.5" py="4" size="lg">
-                {item.date.format("MMMM")} {year.format("YYYY")}
-              </Heading>
-              <Card
-                onClick={(id) => onClickEvent(id)}
-                key={(item.name + index).toString()}
-                id={item._id}
-                currentDate={year}
-                name={item.name}
-                color={item.color}
-                date={item.date}
-                newDate={
-                  index === 0
-                    ? true
-                    : item.date.format("DD") !=
-                      newArray[index - 1].date.format("DD")
-                }
-              />
-            </Box>
-          );
-        } else if (item.date.month() === newArray[index - 1].date.month()) {
-          <Card
-            onClick={(id) => onClickEvent(id)}
-            key={(item.name + index).toString()}
-            id={item._id}
-            currentDate={year}
-            name={item.name}
-            color={item.color}
-            date={item.date}
-            newDate={
-              index === 0
-                ? true
-                : item.date.format("DD") !=
-                  newArray[index - 1].date.format("DD")
-            }
-          />;
-        }
-      })}
-    </VStack>
-  );
+  if (view == "agenda") {
+    if (newArray.length === 0) {
+      return (
+        <Flex
+          w="full"
+          h="full"
+          flexDirection={"column"}
+          justifyContent={"center"}
+          alignItems="center"
+        >
+          <Heading textAlign={"center"} mb="7" py="4" size="lg">
+            Looks like you haven't added a birthday yet 🤔
+          </Heading>
+          <Button
+            boxShadow={"lg"}
+            colorScheme={"brand"}
+            variant="outline"
+            onClick={() => onClickAddBirthday()}
+          >
+            Add Birthday?
+          </Button>
+        </Flex>
+      );
+    }
+    return (
+      <VStack
+        p="6"
+        width={"full"}
+        bg={colorMode == "dark" ? "gray.700" : "gray.100"}
+        alignItems={"stretch"}
+      >
+        {newArray.map((item, index) => {
+          if (
+            item.date.month() ===
+              newArray[index === 0 ? 1 : index - 1].date.month() &&
+            index !== 0
+          ) {
+            return (
+              <Box px="2">
+                <Card
+                  onClick={(id) => onClickEvent(id)}
+                  key={(item.name + index).toString()}
+                  id={item._id}
+                  currentDate={year}
+                  name={item.name}
+                  color={item.color}
+                  date={item.date}
+                  newDate={
+                    index === 0
+                      ? true
+                      : item.date.format("DD") !=
+                        newArray[index - 1].date.format("DD")
+                  }
+                />
+              </Box>
+            );
+          } else {
+            return (
+              <Box px="2">
+                <Heading pt="0.5" py="4" size="lg">
+                  {item.date.format("MMMM")} {year.format("YYYY")}
+                </Heading>
+                <Card
+                  onClick={(id) => onClickEvent(id)}
+                  key={(item.name + index).toString()}
+                  id={item._id}
+                  currentDate={year}
+                  name={item.name}
+                  color={item.color}
+                  date={item.date}
+                  newDate={
+                    index === 0
+                      ? true
+                      : item.date.format("DD") !=
+                        newArray[index - 1].date.format("DD")
+                  }
+                />
+              </Box>
+            );
+          }
+        })}
+      </VStack>
+    );
+  }
 
   return (
     <VStack

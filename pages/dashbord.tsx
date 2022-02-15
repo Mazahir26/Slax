@@ -53,6 +53,7 @@ const Home: NextPage<{ isConnected: boolean; data: eventData[] }> = ({
   const { colorMode } = useColorMode();
   const toast = useToast();
   const [selectedEvent, setSelectedEvent] = useState<event | null>(null);
+  const [view, setView] = useState<"agenda" | "month">("agenda");
 
   async function addEvent(event: {
     name: string;
@@ -92,7 +93,7 @@ const Home: NextPage<{ isConnected: boolean; data: eventData[] }> = ({
         }
         toast({
           position: "bottom-left",
-          title: "Birthday Added.",
+          title: "Birthday Added. 🎉",
           status: "success",
           description: `We will remind you to wish ${event.name} on ${moment(
             event.date
@@ -272,11 +273,15 @@ const Home: NextPage<{ isConnected: boolean; data: eventData[] }> = ({
         h={"90vh"}
       >
         <TopBar
+          view={view}
+          setView={setView}
           currentYear={currentYear}
           onOpen={onOpen}
           setCurrentYear={setCurrentYear}
         />
         <List
+          onClickAddBirthday={onOpen}
+          view={view}
           onClickEvent={(id: string) => {
             const selected = events.find((value) => value._id === id);
             selected ? setSelectedEvent(selected) : null;

@@ -17,13 +17,16 @@ export default function TopBar({
   currentYear,
   setCurrentYear,
   onOpen,
+  setView,
+  view,
 }: {
   currentYear: moment.Moment;
   setCurrentYear: Function;
   onOpen: Function;
+  view: "agenda" | "month";
+  setView: Function;
 }) {
   const { colorMode } = useColorMode();
-
   return (
     <Box
       alignSelf={"stretch"}
@@ -67,10 +70,11 @@ export default function TopBar({
         <Box mx="2" />
         <Tabs
           onChange={(index) => {
-            console.log(index);
+            index == 0 ? setView("agenda") : setView("month");
           }}
           variant={"solid-rounded"}
           colorScheme="brand"
+          index={view == "agenda" ? 0 : 1}
         >
           <TabList boxShadow={"lg"} borderRadius="md">
             <Tab borderRightRadius={"none"} borderLeftRadius={"md"}>
