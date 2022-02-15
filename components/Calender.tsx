@@ -34,6 +34,64 @@ export default function List({
   const newArray = events.sort((a, b) => {
     return moment(a.date).diff(b.date);
   });
+
+  return (
+    <VStack
+      p="6"
+      width={"full"}
+      bg={colorMode == "dark" ? "gray.700" : "gray.100"}
+      alignItems={"stretch"}
+    >
+      {newArray.map((item, index) => {
+        if (
+          index === 0 ||
+          (index != 0
+            ? true
+            : item.date.month() === newArray[index - 1].date.month())
+        ) {
+          return (
+            <Box>
+              <Heading mt="0.5" py="4" size="lg">
+                {item.date.format("MMMM")} {year.format("YYYY")}
+              </Heading>
+              <Card
+                onClick={(id) => onClickEvent(id)}
+                key={(item.name + index).toString()}
+                id={item._id}
+                currentDate={year}
+                name={item.name}
+                color={item.color}
+                date={item.date}
+                newDate={
+                  index === 0
+                    ? true
+                    : item.date.format("DD") !=
+                      newArray[index - 1].date.format("DD")
+                }
+              />
+            </Box>
+          );
+        } else if (item.date.month() === newArray[index - 1].date.month()) {
+          <Card
+            onClick={(id) => onClickEvent(id)}
+            key={(item.name + index).toString()}
+            id={item._id}
+            currentDate={year}
+            name={item.name}
+            color={item.color}
+            date={item.date}
+            newDate={
+              index === 0
+                ? true
+                : item.date.format("DD") !=
+                  newArray[index - 1].date.format("DD")
+            }
+          />;
+        }
+      })}
+    </VStack>
+  );
+
   return (
     <VStack
       p="6"

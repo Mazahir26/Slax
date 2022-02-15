@@ -18,6 +18,7 @@ export default NextAuth({
   },
   providers: [
     EmailProvider({
+      from: "user@example.com",
       async sendVerificationRequest({
         identifier: email,
         url,
@@ -33,7 +34,6 @@ export default NextAuth({
           html: html({ url, host, email }),
         });
       },
-
       server: {
         host: process.env.EMAIL_SERVER_HOST
           ? process.env.EMAIL_SERVER_HOST
@@ -43,11 +43,11 @@ export default NextAuth({
           : 0,
         requireTLS: true,
         auth: {
-          pass: process.env.EMAIL_SERVER_USER
-            ? process.env.EMAIL_SERVER_USER
-            : "",
-          user: process.env.EMAIL_SERVER_PASSWORD
+          pass: process.env.EMAIL_SERVER_PASSWORD
             ? process.env.EMAIL_SERVER_PASSWORD
+            : "",
+          user: process.env.EMAIL_SERVER_USER
+            ? process.env.EMAIL_SERVER_USER
             : "",
         },
       },

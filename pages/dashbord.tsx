@@ -323,9 +323,7 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
         projection: { _id: 1, date: 1, name: 1, user: 1, color: 1 },
       }
     );
-    if ((await cursor.count()) === 0) {
-      console.log("No documents found!");
-    }
+
     const propsData = await cursor.toArray();
     propsData.map((x) => {
       x.date = moment(x.date).toISOString();
