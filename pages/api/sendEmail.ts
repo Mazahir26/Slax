@@ -13,14 +13,14 @@ export default async function handler(
     const transporter = nodemailer.createTransport({
       service: "Gmail", // no need to set host or port etc.
       auth: {
-        user: "***REMOVED***",
-        pass: "***REMOVED***",
+        user: "",
+        pass: "",
       },
     });
     try {
       const data = await transporter.sendMail({
-        to: "***REMOVED***",
-        from: "***REMOVED***",
+        to: "",
+        from: "",
         subject: "Signup verification",
         html: '<h1>Please verify your email</h1><a href="www.google.com">',
       });
