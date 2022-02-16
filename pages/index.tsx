@@ -22,12 +22,6 @@ const Home: NextPage = (props) => {
 
   return (
     <>
-      <Head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap"
-          rel="stylesheet"
-        />
-      </Head>
       <Container maxW={"2xl"}>
         <Stack
           as={Box}
@@ -50,9 +44,10 @@ const Home: NextPage = (props) => {
             </Text>
           </Heading>
           <Text color={"gray.500"}>
+            {`
             It's very easy create an account, add birthdays and forget about it.
             We will make sure that you remember there birthday, So that you can
-            focus on planing an surprise for them 😉.
+            focus on planing an surprise for them 😉.`}
           </Text>
           <Stack
             direction={"column"}
@@ -121,38 +116,4 @@ const Arrow = createIcon({
   ),
 });
 
-// interface eventData {
-//   name: string;
-//   date: Date;
-//   user: string;
-// }
-
-// export async function getServerSideProps(context: GetServerSidePropsContext) {
-//   try {
-//     const user = await getSession(context);
-//     if (!user?.user?.email) {
-//       return {
-//         props: { isConnected: true },
-//       };
-//     }
-//     const cli = await client;
-//     const database = cli.db("Data");
-//     const data = database.collection<eventData>("reminders");
-//     const result = await data.insertOne({
-//       date: moment().toDate(),
-//       user: user.user.email,
-//       name: "mazahir",
-//     });
-//     console.log(`A document was inserted with the _id: ${result.insertedId}`);
-//     cli.close();
-//     return {
-//       props: { isConnected: true },
-//     };
-//   } catch (e) {
-//     console.error(e);
-//     return {
-//       props: { isConnected: false },
-//     };
-//   }
-// }
 export default Home;

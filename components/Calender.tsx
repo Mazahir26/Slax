@@ -76,7 +76,7 @@ export default function List({
           alignItems="center"
         >
           <Heading textAlign={"center"} mb="7" py="4" size="lg">
-            Looks like you haven't added a birthday yet 🤔
+            {`Looks like you haven't added a birthday yet 🤔`}
           </Heading>
           <Button
             boxShadow={"lg"}

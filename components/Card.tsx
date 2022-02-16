@@ -87,13 +87,13 @@ export default function Card({
               color={colorMode == "dark" ? "white" : getContrast(color)}
               size={"md"}
             >
-              {name}'s Birthday
+              {`${name}'s Birthday`}
             </Heading>
             <Text
               color={colorMode == "dark" ? "white" : getContrast(color)}
               size={"md"}
             >
-              {Math.abs(date.diff(currentDate, "years"))} years old
+              {`${Math.abs(date.diff(currentDate, "years"))} years old`}
             </Text>
           </Flex>
         </Flex>

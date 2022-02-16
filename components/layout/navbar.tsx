@@ -26,7 +26,7 @@ export default function Navbar() {
         boxShadow="lg"
         alignItems={"center"}
       >
-        <Link href="/">
+        <Link passHref href="/">
           <Box
             _focus={{ boxShadow: "none", color: "brand.100" }}
             as="button"

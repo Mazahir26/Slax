@@ -5,7 +5,7 @@ import {
   Spinner,
   useColorMode,
 } from "@chakra-ui/react";
-export default function ({
+export default function Loading({
   isOpen,
   onClose,
 }: {

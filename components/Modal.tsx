@@ -18,7 +18,7 @@ import { Field, Form, Formik } from "formik";
 import moment from "moment";
 import { useState } from "react";
 import ColorSelector from "./ColorSelector";
-export default function ({
+export default function BirthdayModal({
   isOpen,
   onClose,
   PushEvent,
