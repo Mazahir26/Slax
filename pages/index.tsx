@@ -1,4 +1,3 @@
-import Head from "next/head";
 import {
   Box,
   Heading,
@@ -9,16 +8,14 @@ import {
   Icon,
   useColorModeValue,
   createIcon,
-  Flex,
-  useColorMode,
 } from "@chakra-ui/react";
-import type { GetServerSidePropsContext, NextPage } from "next";
-import client from "../lib/mongodb";
-import { getSession, signIn, useSession } from "next-auth/react";
-
+import type { NextPage } from "next";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter } from "next/router";
+import Footer from "../components/layout/footer";
 const Home: NextPage = (props) => {
   const { data: session, status } = useSession();
-  const { colorMode } = useColorMode();
+  const router = useRouter();
 
   return (
     <>
@@ -56,49 +53,68 @@ const Home: NextPage = (props) => {
             alignSelf={"center"}
             position={"relative"}
           >
-            <Button
-              colorScheme={"brand"}
-              bg={"brand.400"}
-              rounded={"full"}
-              px={6}
-              _hover={{
-                bg: "brand.500",
-              }}
-              onClick={() => signIn()}
-            >
-              Create an Account
-            </Button>
-            <Button
-              onClick={() => signIn()}
-              variant={"link"}
-              colorScheme={"brand"}
-              size={"sm"}
-            >
-              Sign in instead?
-            </Button>
-            <Box>
-              <Icon
-                as={Arrow}
-                color={useColorModeValue("gray.800", "gray.300")}
-                w={71}
-                position={"absolute"}
-                right={-71}
-                top={"10px"}
-              />
-              <Text
-                fontSize={"lg"}
-                fontFamily={"Caveat"}
-                position={"absolute"}
-                right={"-125px"}
-                top={"-15px"}
-                transform={"rotate(10deg)"}
+            {status === "authenticated" ? (
+              <Button
+                colorScheme={"brand"}
+                bg={"brand.400"}
+                rounded={"full"}
+                px={6}
+                _hover={{
+                  bg: "brand.500",
+                }}
+                onClick={() => router.replace("/dashboard")}
               >
-                its free
-              </Text>
-            </Box>
+                Go to Dashboard
+              </Button>
+            ) : (
+              <>
+                <Button
+                  colorScheme={"brand"}
+                  bg={"brand.400"}
+                  rounded={"full"}
+                  px={6}
+                  _hover={{
+                    bg: "brand.500",
+                  }}
+                  onClick={() => signIn()}
+                >
+                  Create an Account
+                </Button>
+                <Button
+                  onClick={() => signIn()}
+                  variant={"link"}
+                  colorScheme={"brand"}
+                  size={"sm"}
+                >
+                  Sign in instead?
+                </Button>
+
+                <Box>
+                  <Icon
+                    as={Arrow}
+                    color={useColorModeValue("gray.800", "gray.300")}
+                    w={71}
+                    position={"absolute"}
+                    right={-71}
+                    top={"10px"}
+                  />
+                  <Text
+                    fontSize={"lg"}
+                    fontFamily={"Caveat"}
+                    position={"absolute"}
+                    right={"-125px"}
+                    top={"-15px"}
+                    transform={"rotate(10deg)"}
+                  >
+                    its free
+                  </Text>
+                </Box>
+              </>
+            )}
           </Stack>
         </Stack>
       </Container>
+      <Footer />
     </>
   );
 };

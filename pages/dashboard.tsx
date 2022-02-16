@@ -21,7 +21,7 @@ import { eventData, event, rawEvent } from "../components/types";
 import { InsertOneResult, DeleteResult, UpdateResult } from "mongodb";
 import Loading from "../components/layout/loading";
 import { Skeleton, SkeletonCircle, SkeletonText } from "@chakra-ui/react";
-const Home: NextPage<{ isConnected: boolean; data: eventData[] }> = ({
+const dashboard: NextPage<{ isConnected: boolean; data: eventData[] }> = ({
   isConnected = true,
   data = [],
 }) => {
@@ -346,4 +346,4 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
   }
 }
 
-export default Home;
+export default dashboard;

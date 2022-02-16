@@ -61,9 +61,6 @@ export default function List({
       })
     );
   }, [events]);
-  // const sortedArray = events.sort((a, b) => {
-  //   return moment(a.date).diff(b.date);
-  // });
 
   if (view == "agenda") {
     if (sortedArray.length === 0) {
@@ -103,7 +100,7 @@ export default function List({
             index !== 0
           ) {
             return (
-              <Box px="2">
+              <Box key={item.user + index} px="2">
                 <Card
                   onClick={(id) => onClickEvent(id)}
                   key={(item.name + index).toString()}
@@ -123,7 +120,7 @@ export default function List({
             );
           } else {
             return (
-              <Box px="2">
+              <Box key={item.user + index} px="2">
                 <Heading pt="0.5" py="4" size="lg">
                   {item.date.format("MMMM")} {year.format("YYYY")}
                 </Heading>
