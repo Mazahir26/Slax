@@ -1,13 +1,4 @@
-import { DeleteIcon, EditIcon } from "@chakra-ui/icons";
-import {
-  Box,
-  Flex,
-  Heading,
-  HStack,
-  IconButton,
-  Text,
-  useColorMode,
-} from "@chakra-ui/react";
+import { Box, Flex, Heading, Text, useColorMode } from "@chakra-ui/react";
 import moment from "moment";
 
 export default function Card({

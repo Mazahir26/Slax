@@ -39,11 +39,16 @@ export default function TopBar({
       mx="6"
     >
       <Flex flexDirection={"row"} justifyContent="flex-start">
-        <Flex flexDirection={"row"} justifyContent="flex-start">
+        <Flex
+          flexDirection={"row"}
+          alignItems="center"
+          justifyContent="flex-start"
+        >
           <IconButton
             variant={"ghost"}
             aria-label="back"
             icon={<ChevronLeftIcon w={6} h={6} />}
+            disabled={currentYear.year() <= moment().year()}
             onClick={() =>
               setCurrentYear(moment(currentYear).subtract(1, "year"))
             }
@@ -55,8 +60,23 @@ export default function TopBar({
             variant={"ghost"}
             aria-label="back"
             icon={<ChevronRightIcon w={6} h={6} />}
+            disabled={moment(currentYear).diff(moment(), "years") >= 50}
             onClick={() => setCurrentYear(moment(currentYear).add(1, "year"))}
           />
+          {currentYear.year() > moment().year() ? (
+            <Button
+              mx="2"
+              size={"xs"}
+              variant={"solid"}
+              aria-label="Return to current year"
+              colorScheme={"brand"}
+              onClick={() =>
+                setCurrentYear(moment(currentYear).set("year", moment().year()))
+              }
+            >
+              Today
+            </Button>
+          ) : null}
         </Flex>
         <Spacer />
         <Button

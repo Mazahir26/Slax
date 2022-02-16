@@ -13,6 +13,7 @@ import {
   FormHelperText,
   FormLabel,
   Input,
+  Text,
 } from "@chakra-ui/react";
 import { Field, Form, Formik } from "formik";
 import moment from "moment";
@@ -152,6 +153,14 @@ export default function EditDrawer({
                     options={options}
                     setColor={(color) => setColor(color)}
                   />
+                  <Box my="4" />
+                  <FormLabel>Stats</FormLabel>
+                  <Text>
+                    {props.values.name} is{" "}
+                    {moment().diff(moment(props.values.date), "years")} years
+                    old, or {moment().diff(moment(props.values.date), "days")}{" "}
+                    days old.
+                  </Text>
                 </DrawerBody>
                 <DrawerFooter borderTopWidth="1px">
                   <Button
