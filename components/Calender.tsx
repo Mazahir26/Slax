@@ -9,6 +9,7 @@ import {
   Button,
 } from "@chakra-ui/react";
 import moment from "moment";
+import { useEffect, useState } from "react";
 import Card from "./Card";
 import { event } from "./types";
 
@@ -44,12 +45,28 @@ export default function List({
   onClickAddBirthday: Function;
 }) {
   const { colorMode } = useColorMode();
-  const newArray = events.sort((a, b) => {
-    return moment(a.date).diff(b.date);
-  });
+
+  const [sortedArray, setSortedArray] = useState(
+    events.sort((a, b) =>
+      moment(a.date)
+        .set("year", moment().year())
+        .diff(moment(b.date).set("year", moment().year()))
+    )
+  );
+
+  useEffect(() => {
+    setSortedArray(
+      events.sort((a, b) => {
+        return moment(a.date).diff(b.date);
+      })
+    );
+  }, [events]);
+  // const sortedArray = events.sort((a, b) => {
+  //   return moment(a.date).diff(b.date);
+  // });
 
   if (view == "agenda") {
-    if (newArray.length === 0) {
+    if (sortedArray.length === 0) {
       return (
         <Flex
           w="full"
@@ -79,10 +96,10 @@ export default function List({
         bg={colorMode == "dark" ? "gray.700" : "gray.100"}
         alignItems={"stretch"}
       >
-        {newArray.map((item, index) => {
+        {sortedArray.map((item, index) => {
           if (
             item.date.month() ===
-              newArray[index === 0 ? 1 : index - 1].date.month() &&
+              sortedArray[index === 0 ? 1 : index - 1].date.month() &&
             index !== 0
           ) {
             return (
@@ -99,7 +116,7 @@ export default function List({
                     index === 0
                       ? true
                       : item.date.format("DD") !=
-                        newArray[index - 1].date.format("DD")
+                        sortedArray[index - 1].date.format("DD")
                   }
                 />
               </Box>
@@ -122,7 +139,7 @@ export default function List({
                     index === 0
                       ? true
                       : item.date.format("DD") !=
-                        newArray[index - 1].date.format("DD")
+                        sortedArray[index - 1].date.format("DD")
                   }
                 />
               </Box>
@@ -141,7 +158,7 @@ export default function List({
       alignItems={"stretch"}
     >
       {moment.months().map((month, ind) => {
-        const isThereABirthdayThisMonth = newArray.find(
+        const isThereABirthdayThisMonth = sortedArray.find(
           (o) => o.date.format("MMMM") === month
         );
         if (isThereABirthdayThisMonth)
@@ -153,7 +170,7 @@ export default function List({
               </Heading>
 
               <VStack px="2" width={"full"}>
-                {newArray.map((day, index) => {
+                {sortedArray.map((day, index) => {
                   if (
                     day.date.format("MM") ===
                     isThereABirthdayThisMonth.date.format("MM")
@@ -171,7 +188,7 @@ export default function List({
                           index === 0
                             ? true
                             : day.date.format("DD") !=
-                              newArray[index - 1].date.format("DD")
+                              sortedArray[index - 1].date.format("DD")
                         }
                       />
                     );
