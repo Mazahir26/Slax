@@ -43,7 +43,7 @@ const Dashboard: NextPage = () => {
   const [isConnected, setIsConnected] = useState(false);
   useEffect(() => {
     getEvents();
-  }, []);
+  }, [getEvents]);
 
   if (status === "unauthenticated") {
     return (
