@@ -1,6 +1,7 @@
+import moment from "moment";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getSession } from "next-auth/react";
-import { rawEvent } from "../../components/types";
+import { eventData } from "../../components/types";
 import client from "../../lib/mongodb";
 
 export default async function handler(
@@ -22,27 +23,26 @@ export default async function handler(
       msg: "Invalid Token",
       code: 401,
     });
-  if (req.method === "POST") {
+  if (req.method === "GET") {
     try {
       const cli = await client.connect();
       const database = cli.db("Data");
-      const reminders = database.collection<rawEvent>("reminders");
-      if (!session?.user?.email)
-        return res.status(401).json({
-          msg: "You need to be authenticated",
-          code: 401,
-        });
-      const result = await reminders.deleteMany({ user: session.user.email });
-      if (result.acknowledged) {
-        const database2 = cli.db("auth");
-        const users = database2.collection("users");
-        const result2 = await users.deleteMany({ email: session.user.email });
-        cli.close();
-        return res.status(201).json(result2);
-      } else {
-        cli.close();
-        throw Error("Not acknowledged");
-      }
+      const reminders = database.collection<eventData>("reminders");
+      const cursor = reminders.find(
+        {
+          user: session.user.email,
+        },
+        {
+          projection: { _id: 1, date: 1, name: 1, user: 1, color: 1 },
+        }
+      );
+      const result = await cursor.toArray();
+      result.map((x) => {
+        x.date = moment(x.date).toISOString();
+        x._id = x._id.toString();
+      });
+      cli.close();
+      return res.status(200).json(result);
     } catch (e) {
       return res.status(500).json({
         msg: "Ops something went wrong",
@@ -51,7 +51,7 @@ export default async function handler(
     }
   } else {
     return res.status(400).json({
-      msg: "Get is not allowed in this Api route",
+      msg: "only Get allowed in this Api route",
       code: 400,
     });
   }

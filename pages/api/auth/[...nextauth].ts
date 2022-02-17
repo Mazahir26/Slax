@@ -15,20 +15,14 @@ export default NextAuth({
   pages: {
     signIn: "/signup",
     verifyRequest: "/verification",
+    signOut: "/signout",
+    error: "/error",
   },
   adapter: MongoDBAdapter(client.connect()),
   session: {
     strategy: "jwt",
   },
 
-  callbacks: {
-    async signIn({ user, account, profile, email, credentials }) {
-      return true;
-    },
-    async redirect({ url, baseUrl }) {
-      return "";
-    },
-  },
   providers: [
     EmailProvider({
       from: "user@example.com",

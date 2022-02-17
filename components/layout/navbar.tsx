@@ -12,6 +12,8 @@ import {
   MenuList,
   MenuItem,
   Link,
+  Spinner,
+  useToast,
 } from "@chakra-ui/react";
 import { CgProfile } from "react-icons/cg";
 import { useSession, signIn, signOut } from "next-auth/react";
@@ -20,10 +22,44 @@ import { AiOutlineClose, AiOutlineMenu } from "react-icons/ai";
 import "@fontsource/quicksand/400.css";
 // import NextLink from "next/link";
 export default function Navbar() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const { toggleColorMode, colorMode } = useColorMode();
   const router = useRouter();
-  console.log();
+  const toast = useToast();
+
+  async function DeleteAccount() {
+    if (status == "authenticated") {
+      try {
+        const response = await fetch("/api/deleteAccount", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        if (response.status !== 201) {
+          throw Error(response.status.toString());
+        }
+        toast({
+          position: "bottom-left",
+          title: "Deleted Successfully",
+          status: "success",
+          duration: 5000,
+          isClosable: true,
+        });
+        signOut({ callbackUrl: "/" });
+      } catch (err) {
+        console.log(err);
+        toast({
+          position: "bottom-left",
+          title: "Oops something went wrong!",
+          status: "error",
+          description: `Try again later..:(`,
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+    }
+  }
   return (
     <Box alignSelf={"stretch"} alignItems={"stretch"}>
       <Flex
@@ -38,7 +74,9 @@ export default function Navbar() {
         </Box>
 
         <Spacer />
-        {session ? (
+        {status === "loading" ? (
+          <Spinner colorScheme="brand" />
+        ) : session ? (
           <Menu variant={"ghost"} colorScheme={"brand"}>
             {({ isOpen }) => (
               <>
@@ -59,8 +97,7 @@ export default function Navbar() {
                 <MenuList>
                   <MenuItem
                     onClick={() => {
-                      router.replace("/");
-                      signOut();
+                      signOut({ callbackUrl: "/signout" });
                     }}
                   >
                     Sign Out
@@ -69,7 +106,7 @@ export default function Navbar() {
                     Change Theme
                   </MenuItem>
                   <MenuItem>About</MenuItem>
-                  <MenuItem onClick={() => {}} color={"red.400"}>
+                  <MenuItem onClick={() => DeleteAccount()} color={"red.400"}>
                     Delete Account
                   </MenuItem>
                 </MenuList>

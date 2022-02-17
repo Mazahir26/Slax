@@ -51,7 +51,10 @@ export default function SignIn() {
           >
             <Formik
               onSubmit={async (values, actions) => {
-                await signIn("email", { email: values.email });
+                await signIn("email", {
+                  email: values.email,
+                  callbackUrl: "/dashboard",
+                });
                 actions.setSubmitting(false);
               }}
               initialValues={{ email: "" }}
