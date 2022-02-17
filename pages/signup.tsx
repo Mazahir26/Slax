@@ -88,9 +88,9 @@ export default function SignIn() {
                           Send Link
                         </Button>
                         <Text fontSize={"xs"}>
-                          Click “Send Link” to agree to Slax's Terms of Service
+                          {` Click “Send Link” to agree to Slax's Terms of Service
                           and acknowledge that Slax's Privacy Policy applies to
-                          you.
+                          you.`}
                         </Text>
                       </Stack>
                     </Stack>
