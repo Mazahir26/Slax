@@ -20,7 +20,8 @@ import { eventData, event, rawEvent } from "../components/types";
 import { InsertOneResult, DeleteResult, UpdateResult } from "mongodb";
 import Loading from "../components/layout/loading";
 import { Skeleton, SkeletonCircle } from "@chakra-ui/react";
-import { Head } from "next/document";
+import Head from "next/head";
+
 const Dashboard: NextPage<{ isConnected: boolean; data: eventData[] }> = ({
   isConnected = true,
   data = [],

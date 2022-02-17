@@ -11,10 +11,13 @@ import {
 import Footer from "../components/layout/footer";
 import { SiMinutemailer } from "react-icons/si";
 import { AiFillDatabase, AiFillGithub } from "react-icons/ai";
-import { Head } from "next/document";
+import Head from "next/head";
 export default function About() {
   return (
     <>
+      <Head>
+        <title>About | Slax </title>
+      </Head>
       <Flex px="8" w="100vw" minH={"81vh"} flexDirection={"column"}>
         <Box pt="10">
           <Heading size={"2xl"}>About</Heading>

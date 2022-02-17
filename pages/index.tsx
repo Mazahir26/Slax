@@ -14,6 +14,7 @@ import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Footer from "../components/layout/footer";
 import "@fontsource/caveat/400.css";
+import Head from "next/head";
 
 const Home: NextPage = (props) => {
   const { data: session, status } = useSession();
@@ -21,6 +22,10 @@ const Home: NextPage = (props) => {
   const iconColor = useColorModeValue("gray.800", "gray.300");
   return (
     <>
+      <Head>
+        <title>Slax </title>
+        <meta name="viewport" content="initial-scale=1.0, width=device-width" />
+      </Head>
       <Container maxW={"2xl"}>
         <Stack
           as={Box}

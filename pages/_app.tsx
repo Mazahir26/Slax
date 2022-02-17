@@ -3,7 +3,6 @@ import { ChakraProvider } from "@chakra-ui/react";
 import { SessionProvider } from "next-auth/react";
 import Navbar from "../components/layout/navbar";
 import { extendTheme } from "@chakra-ui/react";
-import Head from "next/head";
 const theme = extendTheme({
   colors: {
     brand: {
@@ -24,10 +23,6 @@ const theme = extendTheme({
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <SessionProvider session={pageProps.session}>
-      <Head>
-        <title>Home | Slax </title>
-        <meta name="viewport" content="initial-scale=1.0, width=device-width" />
-      </Head>
       <ChakraProvider theme={theme}>
         <Navbar />
         <Component {...pageProps} />
