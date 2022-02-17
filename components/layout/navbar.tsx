@@ -23,6 +23,7 @@ export default function Navbar() {
   const { data: session } = useSession();
   const { toggleColorMode, colorMode } = useColorMode();
   const router = useRouter();
+  console.log();
   return (
     <Box alignSelf={"stretch"} alignItems={"stretch"}>
       <Flex
@@ -104,11 +105,12 @@ export default function Navbar() {
                     <MenuList>
                       <MenuItem
                         onClick={() => {
-                          router.replace("/");
-                          signIn();
+                          if (router.pathname === "/signup")
+                            router.push("/login");
+                          else router.push("/signup");
                         }}
                       >
-                        Sign up
+                        {router.pathname === "/signup" ? "Login" : "Sign Up"}
                       </MenuItem>
                       <MenuItem onClick={() => toggleColorMode()}>
                         Change Theme
@@ -122,14 +124,14 @@ export default function Navbar() {
             <Flex flexDirection={"row"} display={["none", "flex"]}>
               <Button
                 onClick={() => {
-                  router.replace("/dashboard");
-                  signIn();
+                  if (router.pathname === "/signup") router.push("/login");
+                  else router.push("/signup");
                 }}
                 variant="solid"
                 colorScheme={"brand"}
                 fontSize={["sm", "md"]}
               >
-                Sign up
+                {router.pathname === "/signup" ? "Login" : "Sign Up"}
               </Button>
               <Button
                 mx="2"
