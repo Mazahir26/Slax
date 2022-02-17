@@ -3,7 +3,6 @@ import {
   useDisclosure,
   useColorMode,
   Box,
-  Spinner,
   Heading,
   useToast,
   Stack,
@@ -20,8 +19,9 @@ import { getSession, useSession } from "next-auth/react";
 import { eventData, event, rawEvent } from "../components/types";
 import { InsertOneResult, DeleteResult, UpdateResult } from "mongodb";
 import Loading from "../components/layout/loading";
-import { Skeleton, SkeletonCircle, SkeletonText } from "@chakra-ui/react";
-const dashboard: NextPage<{ isConnected: boolean; data: eventData[] }> = ({
+import { Skeleton, SkeletonCircle } from "@chakra-ui/react";
+import { Head } from "next/document";
+const Dashboard: NextPage<{ isConnected: boolean; data: eventData[] }> = ({
   isConnected = true,
   data = [],
 }) => {
@@ -265,6 +265,9 @@ const dashboard: NextPage<{ isConnected: boolean; data: eventData[] }> = ({
   }
   return (
     <>
+      <Head>
+        <title>dashboard | Slax </title>
+      </Head>
       <Flex
         flexDirection={"column"}
         bg={colorMode == "dark" ? "gray.700" : "gray.100"}
@@ -346,4 +349,4 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
   }
 }
 
-export default dashboard;
+export default Dashboard;

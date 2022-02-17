@@ -96,7 +96,7 @@ export default function List({
         {sortedArray.map((item, index) => {
           if (
             item.date.month() ===
-              sortedArray[index === 0 ? 1 : index - 1].date.month() &&
+              sortedArray[index === 0 ? 0 : index - 1].date.month() &&
             index !== 0
           ) {
             return (

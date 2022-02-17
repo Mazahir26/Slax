@@ -13,10 +13,12 @@ import type { NextPage } from "next";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Footer from "../components/layout/footer";
+import "@fontsource/caveat/400.css";
+
 const Home: NextPage = (props) => {
   const { data: session, status } = useSession();
   const router = useRouter();
-
+  const iconColor = useColorModeValue("gray.800", "gray.300");
   return (
     <>
       <Container maxW={"2xl"}>
@@ -86,13 +88,13 @@ const Home: NextPage = (props) => {
                   colorScheme={"brand"}
                   size={"sm"}
                 >
-                  Sign in instead?
+                  Have a account. Sign in instead?
                 </Button>
 
-                <Box>
+                <Box display={["none", "initial"]}>
                   <Icon
                     as={Arrow}
-                    color={useColorModeValue("gray.800", "gray.300")}
+                    color={iconColor}
                     w={71}
                     position={"absolute"}
                     right={-71}

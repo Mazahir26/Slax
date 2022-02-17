@@ -1,25 +1,17 @@
 import {
-  Stack,
-  Container,
   Box,
   Flex,
   Text,
   Heading,
-  SimpleGrid,
-  Avatar,
   List,
-  chakra,
-  Icon,
-  useColorModeValue,
   Spacer,
-  As,
-  UnorderedList,
   ListItem,
   ListIcon,
 } from "@chakra-ui/react";
 import Footer from "../components/layout/footer";
 import { SiMinutemailer } from "react-icons/si";
 import { AiFillDatabase, AiFillGithub } from "react-icons/ai";
+import { Head } from "next/document";
 export default function About() {
   return (
     <>
