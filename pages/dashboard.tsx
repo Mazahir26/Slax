@@ -20,10 +20,12 @@ import { InsertOneResult, DeleteResult, UpdateResult } from "mongodb";
 import Loading from "../components/layout/loading";
 import { Skeleton, SkeletonCircle } from "@chakra-ui/react";
 import Head from "next/head";
+import { useRouter } from "next/router";
 
-const Dashboard: NextPage = () => {
+const Dashboard: NextPage = ({}) => {
   const [events, setEvents] = useState<event[]>([]);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const router = useRouter();
   const {
     isOpen: isDrawerOpen,
     onOpen: onDrawerOpen,
@@ -41,9 +43,10 @@ const Dashboard: NextPage = () => {
   const [selectedEvent, setSelectedEvent] = useState<event | null>(null);
   const [view, setView] = useState<"agenda" | "month">("agenda");
   const [isConnected, setIsConnected] = useState(false);
+
   useEffect(() => {
     getEvents();
-  }, [getEvents]);
+  }, []);
 
   if (status === "unauthenticated") {
     return (
@@ -55,7 +58,7 @@ const Dashboard: NextPage = () => {
         justifyContent="center"
         alignItems={"center"}
       >
-        <Heading>You need to sign up</Heading>
+        <Heading>you need to be authenticated</Heading>
       </Flex>
     );
   }
@@ -108,6 +111,7 @@ const Dashboard: NextPage = () => {
         });
         setEvents(temp);
       } catch (error) {
+        router.push("/error?error=ServerError");
         console.log(error);
       } finally {
         setIsConnected(true);
