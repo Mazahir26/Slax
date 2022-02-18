@@ -17,6 +17,7 @@ import {
 } from "@chakra-ui/react";
 import { Field, Form, Formik } from "formik";
 import { signIn, useSession } from "next-auth/react";
+import Head from "next/head";
 import { useRouter } from "next/router";
 import Footer from "../components/layout/footer";
 
@@ -42,6 +43,9 @@ export default function SignIn() {
   }
   return (
     <>
+      <Head>
+        <title>Login| Slax </title>
+      </Head>
       <Flex minH={"85vh"} align={"center"} justify={"center"}>
         <Stack spacing={8} mx={"auto"} maxW={"lg"} py={12} px={6}>
           <Stack align={"center"}>

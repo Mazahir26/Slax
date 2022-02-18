@@ -11,7 +11,7 @@ import Drawer from "../components/drawer";
 import moment from "moment";
 import type { NextPage } from "next";
 import { useEffect, useState } from "react";
-import List from "../components/Calender";
+import Calender from "../components/Calender";
 import TopBar from "../components/TopBar";
 import AddBirthdayModal from "../components/Modal";
 import { useSession } from "next-auth/react";
@@ -21,6 +21,7 @@ import Loading from "../components/layout/loading";
 import { Skeleton, SkeletonCircle } from "@chakra-ui/react";
 import Head from "next/head";
 import { useRouter } from "next/router";
+import { getEvents } from "../lib/helperFunctions";
 
 const Dashboard: NextPage = ({}) => {
   const [events, setEvents] = useState<event[]>([]);
@@ -45,8 +46,13 @@ const Dashboard: NextPage = ({}) => {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    getEvents();
-  }, []);
+    getEvents({
+      router: router,
+      setEvents: setEvents,
+      setIsConnected: setIsConnected,
+      status: status,
+    });
+  }, [status]);
 
   if (status === "unauthenticated") {
     return (
@@ -84,39 +90,6 @@ const Dashboard: NextPage = ({}) => {
         <Skeleton height="16" />
       </Stack>
     );
-  }
-
-  async function getEvents() {
-    if (status == "authenticated") {
-      try {
-        const response = await fetch("/api/getEvents", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-        if (response.status !== 200) {
-          throw Error(response.status.toString());
-        }
-
-        const body: event[] = await response.json();
-        const temp = body.map((item: event) => {
-          return {
-            name: item.name,
-            date: moment(item.date),
-            _id: item._id,
-            user: item.user,
-            color: item.color,
-          };
-        });
-        setEvents(temp);
-      } catch (error) {
-        router.push("/error?error=ServerError");
-        console.log(error);
-      } finally {
-        setIsConnected(true);
-      }
-    }
   }
 
   async function addEvent(event: {
@@ -307,7 +280,7 @@ const Dashboard: NextPage = ({}) => {
           onOpen={onOpen}
           setCurrentYear={setCurrentYear}
         />
-        <List
+        <Calender
           onClickAddBirthday={onOpen}
           view={view}
           onClickEvent={(id: string) => {
