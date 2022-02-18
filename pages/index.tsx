@@ -8,6 +8,7 @@ import {
   Icon,
   useColorModeValue,
   createIcon,
+  Spacer,
 } from "@chakra-ui/react";
 import type { NextPage } from "next";
 import { signIn, useSession } from "next-auth/react";
@@ -26,7 +27,7 @@ const Home: NextPage = (props) => {
         <title>Slax </title>
         <meta name="viewport" content="initial-scale=1.0, width=device-width" />
       </Head>
-      <Container maxW={"2xl"}>
+      <Container h={["80vh", "80vh", "auto"]} maxW={"2xl"}>
         <Stack
           as={Box}
           textAlign={"center"}
