@@ -29,7 +29,7 @@ export default async function handler(
       const cursor = collection.find(
         {},
         {
-          projection: { _id: 0, date: 1, name: 1, user: 1, color: 0 },
+          projection: { _id: 0, date: 1, name: 1, user: 1 },
         }
       );
       const data = await cursor.toArray();
@@ -97,6 +97,7 @@ export default async function handler(
         msg: "Done",
       });
     } catch (e) {
+      console.log(e);
       return res.status(500).json({
         msg: "Ops something went wrong",
         code: 500,
