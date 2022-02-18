@@ -8,18 +8,19 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  return res.status(200).json({
-    mgs: req.body.key,
-  });
-  const curTime = parseInt(moment().format("kkmm"));
-  if (!(curTime > 800 && curTime < 900)) {
-    return res.status(400).json({
-      msg: "Not the right time",
-      code: 400,
-    });
-  }
-
-  if (req.method === "GET") {
+  if (req.method === "POST") {
+    if (req.body.key) {
+      return res.status(401).json({
+        msg: "Not Authenticated",
+        code: 401,
+      });
+    }
+    if (req.body.key != process.env.key) {
+      return res.status(401).json({
+        msg: "Not Authenticated",
+        code: 401,
+      });
+    }
     try {
       const cli = await client;
       const database = cli.db("Data");
