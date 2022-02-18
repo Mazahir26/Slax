@@ -24,7 +24,7 @@ export default function Card({
       alignItems={"center"}
       justifyContent="space-between"
       width={"full"}
-      mx="2"
+      px={["1", "2"]}
     >
       {newDate ? (
         <Flex
@@ -33,7 +33,7 @@ export default function Card({
           alignContent={"center"}
           flexDirection="column"
           w={["14", "16", "20"]}
-          mr="4"
+          mr={["2", "4"]}
         >
           <Heading size={"lg"}>{date.format("Do")}</Heading>
           {moment(date).set("year", currentDate.year()).format("L") ===
@@ -44,7 +44,7 @@ export default function Card({
           ) : null}
         </Flex>
       ) : (
-        <Box w={["14", "16", "20"]} mr="4" />
+        <Box w={["14", "16", "20"]} mr={["2", "4"]} />
       )}
       <Box
         flex={1}
@@ -63,12 +63,12 @@ export default function Card({
           transform: "scale(.98)",
           transition: "all .2s ease-in-out",
         }}
-        minH={"12"}
+        minH={["6", "12"]}
         bg={colorMode == "dark" ? "gray.600" : color}
         alignContent={"center"}
         borderRadius="lg"
         boxShadow="md"
-        p="4"
+        p={["2", "4"]}
         width={"full"}
       >
         <Flex
@@ -82,13 +82,14 @@ export default function Card({
             h="full"
             alignItems="flex-start"
           >
-            <Heading
+            <Text
               isTruncated
               color={colorMode == "dark" ? "white" : getContrast(color)}
-              size={"md"}
+              fontSize="xl"
+              fontWeight="bold"
             >
               {`${name}'s Birthday`}
-            </Heading>
+            </Text>
             <Text
               color={colorMode == "dark" ? "white" : getContrast(color)}
               size={"md"}

@@ -20,7 +20,7 @@ import moment from "moment";
 import { useEffect, useRef, useState } from "react";
 import { event } from "./types";
 import ColorSelector from "./ColorSelector";
-
+import options from "../lib/colors";
 export default function EditDrawer({
   isOpen,
   onClose,
@@ -35,9 +35,9 @@ export default function EditDrawer({
   onSave: (event: event) => void;
 }) {
   const firstField = useRef();
-  const [color, setColor] = useState(event ? event?.color : "#a2d2ff");
+  const [color, setColor] = useState(event ? event?.color : "#FFFFFF");
   useEffect(() => {
-    setColor(event ? event?.color : "#a2d2ff");
+    setColor(event ? event?.color : "#FFFFFF");
   }, [event]);
 
   if (!event) {
@@ -46,7 +46,7 @@ export default function EditDrawer({
 
   function validateName(value: string) {
     let error;
-    if (!value) {
+    if (!value && value.length > 0) {
       error = "Name is required";
     }
     return error;
@@ -57,22 +57,14 @@ export default function EditDrawer({
     if (!moment(value).isValid()) {
       error = "Invalid Date";
     }
+    if (Math.abs(moment(value).diff(moment(), "years")) >= 100) {
+      error = "Invalid Date";
+    }
     if (moment(value).isAfter(moment())) {
       error = "Invalid Date";
     }
     return error;
   }
-
-  const options = [
-    "#ffc8dd",
-    "#a2d2ff",
-    "#ff686b",
-    "#ffc09f",
-    "#b3e0a3",
-    "#98f5e1",
-    "#fea5be",
-    "#FFFFFF",
-  ];
 
   return (
     <>
@@ -90,12 +82,21 @@ export default function EditDrawer({
             date: event.date.format("YYYY-MM-DD"),
           }}
           onSubmit={(values, actions) => {
-            console.log("okkk");
+            if (
+              moment(values.date).format("Do MM YYYY") ===
+                event.date.format("Do MM YYYY") &&
+              event.name === values.name &&
+              color === event.color
+            ) {
+              actions.setSubmitting(false);
+              onClose();
+              return;
+            }
             onSave({
               _id: event._id,
               color: color,
               date: moment(values.date),
-              name: values.name,
+              name: values.name.charAt(0).toUpperCase() + values.name.slice(1),
               user: event.user,
             });
             actions.setSubmitting(false);

@@ -8,18 +8,26 @@ import {
   Icon,
   useColorModeValue,
   createIcon,
+  Spacer,
 } from "@chakra-ui/react";
 import type { NextPage } from "next";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Footer from "../components/layout/footer";
+import "@fontsource/caveat/400.css";
+import Head from "next/head";
+
 const Home: NextPage = (props) => {
   const { data: session, status } = useSession();
   const router = useRouter();
-
+  const iconColor = useColorModeValue("gray.800", "gray.300");
   return (
     <>
-      <Container maxW={"2xl"}>
+      <Head>
+        <title>Slax </title>
+        <meta name="viewport" content="initial-scale=1.0, width=device-width" />
+      </Head>
+      <Container h={["80vh", "80vh", "auto"]} maxW={"2xl"}>
         <Stack
           as={Box}
           textAlign={"center"}
@@ -86,13 +94,13 @@ const Home: NextPage = (props) => {
                   colorScheme={"brand"}
                   size={"sm"}
                 >
-                  Sign in instead?
+                  Have a account. Sign in instead?
                 </Button>
 
-                <Box>
+                <Box display={["none", "initial"]}>
                   <Icon
                     as={Arrow}
-                    color={useColorModeValue("gray.800", "gray.300")}
+                    color={iconColor}
                     w={71}
                     position={"absolute"}
                     right={-71}

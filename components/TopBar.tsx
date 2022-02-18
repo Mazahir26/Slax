@@ -1,10 +1,19 @@
-import { AddIcon, ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
+import {
+  AddIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  Icon,
+} from "@chakra-ui/icons";
 import {
   Box,
   Button,
   Flex,
   Heading,
   IconButton,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuList,
   Spacer,
   Tab,
   TabList,
@@ -12,6 +21,7 @@ import {
   useColorMode,
 } from "@chakra-ui/react";
 import moment from "moment";
+import { BsThreeDotsVertical } from "react-icons/bs";
 
 export default function TopBar({
   currentYear,
@@ -34,9 +44,10 @@ export default function TopBar({
       borderRadius="lg"
       boxShadow="md"
       bg={colorMode == "dark" ? "gray.600" : "white"}
-      p={"4"}
-      m="2"
-      mx="6"
+      px={["1", "4"]}
+      py="4"
+      my="2"
+      mx={["1", "6"]}
     >
       <Flex flexDirection={"row"} justifyContent="flex-start">
         <Flex
@@ -47,19 +58,19 @@ export default function TopBar({
           <IconButton
             variant={"ghost"}
             aria-label="back"
-            icon={<ChevronLeftIcon w={6} h={6} />}
+            icon={<ChevronLeftIcon w={["4", "6"]} h={["4", "6"]} />}
             disabled={currentYear.year() <= moment().year()}
             onClick={() =>
               setCurrentYear(moment(currentYear).subtract(1, "year"))
             }
           />
-          <Heading mx="2" size={"lg"} fontWeight="semibold">
+          <Heading size={"lg"} fontWeight="semibold">
             {currentYear.format("YYYY")}
           </Heading>
           <IconButton
             variant={"ghost"}
             aria-label="back"
-            icon={<ChevronRightIcon w={6} h={6} />}
+            icon={<ChevronRightIcon w={["4", "6"]} h={["4", "6"]} />}
             disabled={moment(currentYear).diff(moment(), "years") >= 50}
             onClick={() => setCurrentYear(moment(currentYear).add(1, "year"))}
           />
@@ -80,6 +91,7 @@ export default function TopBar({
         </Flex>
         <Spacer />
         <Button
+          display={["none", "flex"]}
           boxShadow={"lg"}
           leftIcon={<AddIcon />}
           colorScheme={"brand"}
@@ -87,8 +99,68 @@ export default function TopBar({
         >
           Add Birthday
         </Button>
-        <Box mx="2" />
+        <IconButton
+          variant={"ghost"}
+          display={["flex", "none"]}
+          aria-label="Add"
+          icon={<AddIcon />}
+          onClick={() => onOpen()}
+        />
+        <Box mx={["1", "2"]} />
+
+        <Box display={["initial", "none"]}>
+          <Menu variant={"ghost"} colorScheme={"brand"}>
+            {({ isOpen }) => (
+              <>
+                <MenuButton
+                  aria-label="Options"
+                  bg="transparent"
+                  color={
+                    isOpen
+                      ? "brand.500"
+                      : colorMode === "dark"
+                      ? "gray.100"
+                      : "gray.800"
+                  }
+                  icon={<Icon w="6" h="6" as={BsThreeDotsVertical} />}
+                  as={IconButton}
+                ></MenuButton>
+                <MenuList>
+                  <MenuItem
+                    onClick={() => {
+                      setView("agenda");
+                    }}
+                    color={
+                      view == "agenda"
+                        ? "brand.500"
+                        : colorMode == "dark"
+                        ? "whiteAlpha.700"
+                        : "gray.700"
+                    }
+                  >
+                    Agenda
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      setView("month");
+                    }}
+                    color={
+                      view == "month"
+                        ? "brand.500"
+                        : colorMode == "dark"
+                        ? "whiteAlpha.700"
+                        : "gray.700"
+                    }
+                  >
+                    Month
+                  </MenuItem>
+                </MenuList>
+              </>
+            )}
+          </Menu>
+        </Box>
         <Tabs
+          display={["none", "initial"]}
           onChange={(index) => {
             index == 0 ? setView("agenda") : setView("month");
           }}

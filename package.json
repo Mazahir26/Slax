@@ -12,6 +12,7 @@
     "@chakra-ui/react": "^1.8.3",
     "@emotion/react": "^11",
     "@emotion/styled": "^11",
+    "@fontsource/caveat": "^4.5.3",
     "@fontsource/quicksand": "^4.5.3",
     "@next-auth/mongodb-adapter": "^1.0.1",
     "@types/moment": "^2.13.0",

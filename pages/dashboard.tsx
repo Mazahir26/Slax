@@ -3,40 +3,30 @@ import {
   useDisclosure,
   useColorMode,
   Box,
-  Spinner,
   Heading,
   useToast,
   Stack,
 } from "@chakra-ui/react";
 import Drawer from "../components/drawer";
 import moment from "moment";
-import type { GetServerSidePropsContext, NextPage } from "next";
-import { useState } from "react";
-import List from "../components/Calender";
+import type { NextPage } from "next";
+import { useEffect, useState } from "react";
+import Calender from "../components/Calender";
 import TopBar from "../components/TopBar";
 import AddBirthdayModal from "../components/Modal";
-import client from "../lib/mongodb";
-import { getSession, useSession } from "next-auth/react";
-import { eventData, event, rawEvent } from "../components/types";
+import { useSession } from "next-auth/react";
+import { event, rawEvent } from "../components/types";
 import { InsertOneResult, DeleteResult, UpdateResult } from "mongodb";
 import Loading from "../components/layout/loading";
-import { Skeleton, SkeletonCircle, SkeletonText } from "@chakra-ui/react";
-const dashboard: NextPage<{ isConnected: boolean; data: eventData[] }> = ({
-  isConnected = true,
-  data = [],
-}) => {
-  const [events, setEvents] = useState<event[]>(
-    data.map((item) => {
-      return {
-        name: item.name,
-        date: moment(item.date),
-        _id: item._id,
-        user: item.user,
-        color: item.color,
-      };
-    })
-  );
+import { Skeleton, SkeletonCircle } from "@chakra-ui/react";
+import Head from "next/head";
+import { useRouter } from "next/router";
+import { getEvents } from "../lib/helperFunctions";
+
+const Dashboard: NextPage = ({}) => {
+  const [events, setEvents] = useState<event[]>([]);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const router = useRouter();
   const {
     isOpen: isDrawerOpen,
     onOpen: onDrawerOpen,
@@ -47,13 +37,60 @@ const dashboard: NextPage<{ isConnected: boolean; data: eventData[] }> = ({
     onOpen: setLoading,
     onClose: stopLoading,
   } = useDisclosure();
-
   const [currentYear, setCurrentYear] = useState(moment());
   const { data: session, status } = useSession();
   const { colorMode } = useColorMode();
   const toast = useToast();
   const [selectedEvent, setSelectedEvent] = useState<event | null>(null);
   const [view, setView] = useState<"agenda" | "month">("agenda");
+  const [isConnected, setIsConnected] = useState(false);
+
+  useEffect(() => {
+    getEvents({
+      router: router,
+      setEvents: setEvents,
+      setIsConnected: setIsConnected,
+      status: status,
+    });
+  }, [status]);
+
+  if (status === "unauthenticated") {
+    return (
+      <Flex
+        width={"full"}
+        h={"90vh"}
+        flexDirection={"column"}
+        bg={colorMode == "dark" ? "gray.700" : "gray.100"}
+        justifyContent="center"
+        alignItems={"center"}
+      >
+        <Heading>you need to be authenticated</Heading>
+      </Flex>
+    );
+  }
+
+  if (!isConnected) {
+    return (
+      <Stack pt="10" spacing={"6"} px="6">
+        <Flex alignItems={"center"} flexDir={"row"}>
+          <SkeletonCircle height="20" width={"20"} />
+          <Box mx="4" />
+          <Skeleton height="16" width={"full"} />
+        </Flex>
+        <Box my="4" />
+        <Skeleton height="16" />
+        <Skeleton height="16" />
+        <Flex alignItems={"center"} flexDir={"row"}>
+          <SkeletonCircle height="20" width={"20"} />
+          <Box mx="4" />
+          <Skeleton height="16" width={"full"} />
+        </Flex>
+        <Box my="4" />
+        <Skeleton height="16" />
+        <Skeleton height="16" />
+      </Stack>
+    );
+  }
 
   async function addEvent(event: {
     name: string;
@@ -87,6 +124,7 @@ const dashboard: NextPage<{ isConnected: boolean; data: eventData[] }> = ({
             user: session.user.email,
             color: event.color,
           };
+
           setEvents([...events, insertData]);
         } else {
           throw Error("Not Acknowledged");
@@ -136,7 +174,6 @@ const dashboard: NextPage<{ isConnected: boolean; data: eventData[] }> = ({
         const body: DeleteResult = await response.json();
         if (body.acknowledged) {
           let temp = events;
-
           const filtered = temp.filter((value) => value._id !== id);
           setEvents(filtered);
         } else {
@@ -224,47 +261,11 @@ const dashboard: NextPage<{ isConnected: boolean; data: eventData[] }> = ({
     }
   }
 
-  if (status === "unauthenticated") {
-    return (
-      <Flex
-        width={"full"}
-        h={"90vh"}
-        flexDirection={"column"}
-        bg={colorMode == "dark" ? "gray.700" : "gray.100"}
-        justifyContent="center"
-        alignItems={"center"}
-      >
-        <Heading>You need to sign up</Heading>
-      </Flex>
-    );
-  }
-
-  if (!isConnected) {
-    return (
-      <Stack pt="10" spacing={"6"} px="6">
-        <Flex alignItems={"center"} flexDir={"row"}>
-          <SkeletonCircle height="20" width={"20"} />
-          <Box mx="4" />
-          <Skeleton height="16" width={"full"} />
-        </Flex>
-        <Box my="4" />
-
-        <Skeleton height="16" />
-        <Skeleton height="16" />
-        <Flex alignItems={"center"} flexDir={"row"}>
-          <SkeletonCircle height="20" width={"20"} />
-          <Box mx="4" />
-          <Skeleton height="16" width={"full"} />
-        </Flex>
-        <Box my="4" />
-
-        <Skeleton height="16" />
-        <Skeleton height="16" />
-      </Stack>
-    );
-  }
   return (
     <>
+      <Head>
+        <title>dashboard | Slax </title>
+      </Head>
       <Flex
         flexDirection={"column"}
         bg={colorMode == "dark" ? "gray.700" : "gray.100"}
@@ -279,7 +280,7 @@ const dashboard: NextPage<{ isConnected: boolean; data: eventData[] }> = ({
           onOpen={onOpen}
           setCurrentYear={setCurrentYear}
         />
-        <List
+        <Calender
           onClickAddBirthday={onOpen}
           view={view}
           onClickEvent={(id: string) => {
@@ -308,42 +309,42 @@ const dashboard: NextPage<{ isConnected: boolean; data: eventData[] }> = ({
   );
 };
 
-export async function getServerSideProps(context: GetServerSidePropsContext) {
-  try {
-    const session = await getSession(context);
-    if (!session?.user?.email) {
-      return {
-        props: { isConnected: true, data: [] },
-      };
-    }
-    const cli = await client.connect();
-    const database = cli.db("Data");
-    const data = database.collection<eventData>("reminders");
+// export async function getServerSideProps(context: GetServerSidePropsContext) {
+//   try {
+//     const session = await getSession(context);
+//     if (!session?.user?.email) {
+//       return {
+//         props: { isConnected: true, data: [] },
+//       };
+//     }
+//     const cli = await client.connect();
+//     const database = cli.db("Data");
+//     const data = database.collection<eventData>("reminders");
 
-    const cursor = data.find(
-      {
-        user: session.user.email,
-      },
-      {
-        projection: { _id: 1, date: 1, name: 1, user: 1, color: 1 },
-      }
-    );
+//     const cursor = data.find(
+//       {
+//         user: session.user.email,
+//       },
+//       {
+//         projection: { _id: 1, date: 1, name: 1, user: 1, color: 1 },
+//       }
+//     );
 
-    const propsData = await cursor.toArray();
-    propsData.map((x) => {
-      x.date = moment(x.date).toISOString();
-      x._id = x._id.toString();
-    });
-    cli.close();
-    return {
-      props: { isConnected: true, data: propsData },
-    };
-  } catch (e) {
-    console.error(e);
-    return {
-      props: { isConnected: false, data: [] },
-    };
-  }
-}
+//     const propsData = await cursor.toArray();
+//     propsData.map((x) => {
+//       x.date = moment(x.date).toISOString();
+//       x._id = x._id.toString();
+//     });
+//     cli.close();
+//     return {
+//       props: { isConnected: true, data: propsData },
+//     };
+//   } catch (e) {
+//     console.error(e);
+//     return {
+//       props: { isConnected: false, data: [] },
+//     };
+//   }
+// }
 
-export default dashboard;
+export default Dashboard;

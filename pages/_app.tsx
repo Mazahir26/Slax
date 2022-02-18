@@ -3,7 +3,6 @@ import { ChakraProvider } from "@chakra-ui/react";
 import { SessionProvider } from "next-auth/react";
 import Navbar from "../components/layout/navbar";
 import { extendTheme } from "@chakra-ui/react";
-import "@fontsource/quicksand/400.css";
 const theme = extendTheme({
   colors: {
     brand: {
@@ -17,15 +16,6 @@ const theme = extendTheme({
       700: "#2a88f3",
       800: "#1a7ef2",
       900: "#0974f1",
-    },
-    components: {
-      Heading: {
-        variants: {
-          logo: {
-            fontFamily: "quicksand",
-          },
-        },
-      },
     },
   },
 });

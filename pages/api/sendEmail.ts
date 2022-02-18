@@ -18,7 +18,7 @@ export default async function handler(
 
   if (req.method === "GET") {
     try {
-      const cli = await client.connect();
+      const cli = await client;
       const database = cli.db("Data");
       const collection = database.collection<event>("reminders");
       const cursor = collection.find(
@@ -88,7 +88,6 @@ export default async function handler(
       mails.map((x) => {
         sendMail(x.user, x.upcoming, x.today);
       });
-      await cli.close();
       return res.status(200).json({
         msg: "Done",
       });

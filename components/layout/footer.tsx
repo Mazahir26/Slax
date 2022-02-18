@@ -2,12 +2,13 @@ import {
   Box,
   chakra,
   Container,
+  Spacer,
   Stack,
   Text,
   useColorModeValue,
   VisuallyHidden,
 } from "@chakra-ui/react";
-import { FaInstagram, FaTwitter, FaYoutube } from "react-icons/fa";
+import { FaGithub, FaInstagram, FaTwitter, FaYoutube } from "react-icons/fa";
 import { ReactNode } from "react";
 import moment from "moment";
 
@@ -59,15 +60,16 @@ export default function Footer() {
         align={{ base: "center", md: "center" }}
       >
         <Text>{`©${moment().format("YYYY")} Slax. All rights reserved`}</Text>
+
         <Stack direction={"row"} spacing={6}>
-          <SocialButton label={"Twitter"} href={"#"}>
+          <SocialButton
+            label={"Twitter"}
+            href={"https://twitter.com/mazahir_najmi"}
+          >
             <FaTwitter />
           </SocialButton>
-          <SocialButton label={"YouTube"} href={"#"}>
-            <FaYoutube />
-          </SocialButton>
-          <SocialButton label={"Instagram"} href={"#"}>
-            <FaInstagram />
+          <SocialButton label={"Github"} href={"https://github.com/Mazahir26"}>
+            <FaGithub />
           </SocialButton>
         </Stack>
       </Container>

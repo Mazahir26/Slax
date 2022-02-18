@@ -1,7 +1,7 @@
-import { MongoClient, ObjectId } from "mongodb";
+import moment from "moment";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getSession } from "next-auth/react";
-import { rawEvent } from "../../components/types";
+import { eventData } from "../../components/types";
 import client from "../../lib/mongodb";
 
 export default async function handler(
@@ -23,32 +23,24 @@ export default async function handler(
       msg: "Invalid Token",
       code: 401,
     });
-  if (req.method === "POST") {
-    if (!req.body._id || !req.body.name || !req.body.date || !req.body.color) {
-      return res.status(400).json({
-        msg: "Bad Request",
-        code: 400,
-      });
-    }
+  if (req.method === "GET") {
     try {
       const cli = await client;
       const database = cli.db("Data");
-      const reminders = database.collection<rawEvent>("reminders");
-      const result = await reminders.updateOne(
+      const reminders = database.collection<eventData>("reminders");
+      const cursor = reminders.find(
         {
-          _id: new ObjectId(req.body._id),
+          user: session.user.email,
         },
         {
-          $set: {
-            name: req.body.name,
-            color: req.body.color,
-            date: new Date(req.body.date),
-          },
-        },
-        {
-          upsert: false,
+          projection: { _id: 1, date: 1, name: 1, user: 1, color: 1 },
         }
       );
+      const result = await cursor.toArray();
+      result.map((x) => {
+        x.date = moment(x.date).toISOString();
+        x._id = x._id.toString();
+      });
       return res.status(200).json(result);
     } catch (e) {
       console.log(e);
@@ -59,7 +51,7 @@ export default async function handler(
     }
   } else {
     return res.status(400).json({
-      msg: "Get is not allowed in this Api route",
+      msg: "only Get allowed in this Api route",
       code: 400,
     });
   }
