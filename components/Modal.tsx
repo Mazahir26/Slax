@@ -18,6 +18,7 @@ import { Field, Form, Formik } from "formik";
 import moment from "moment";
 import { useState } from "react";
 import ColorSelector from "./ColorSelector";
+import options from "../lib/colors";
 export default function BirthdayModal({
   isOpen,
   onClose,
@@ -27,21 +28,11 @@ export default function BirthdayModal({
   onClose: () => void;
   PushEvent: Function;
 }) {
-  const [color, setColor] = useState("#a2d2ff");
-  const options = [
-    "#ffc8dd",
-    "#a2d2ff",
-    "#ff686b",
-    "#ffc09f",
-    "#b3e0a3",
-    "#98f5e1",
-    "#fea5be",
-    "#FFFFFF",
-  ];
+  const [color, setColor] = useState("#FFFFFF");
 
   function validateName(value: string) {
     let error;
-    if (!value) {
+    if (!value && value.length > 0) {
       error = "Name is required";
     }
     return error;
@@ -50,6 +41,9 @@ export default function BirthdayModal({
   function validateDate(value: moment.Moment) {
     let error;
     if (!moment(value).isValid()) {
+      error = "Invalid Date";
+    }
+    if (Math.abs(moment(value).diff(moment(), "years")) >= 100) {
       error = "Invalid Date";
     }
     if (moment(value).isAfter(moment())) {
@@ -72,7 +66,8 @@ export default function BirthdayModal({
             }}
             onSubmit={(values, actions) => {
               PushEvent({
-                name: values.name,
+                name:
+                  values.name.charAt(0).toUpperCase() + values.name.slice(1),
                 date: moment(values.date),
                 color: color,
               });
@@ -152,42 +147,3 @@ export default function BirthdayModal({
     </Modal>
   );
 }
-
-// moment(event.target.value).isAfter(moment())
-//                   ? setError({ err: "Invalid Date", type: "date" })
-//                   : () => {
-//                       console.log("oki");
-//                       setStartDate(moment(event.target.value)),
-//                         error.type === "date"
-//                           ? setError({
-//                               err: "",
-//                               type: "",
-//                             })
-//                           : {};
-//                     }
-
-// <FormControl isRequired>
-//             <FormLabel>Name</FormLabel>
-//             <Input variant={"flushed"} placeholder="eg. Saitama" />
-// <Box my="4" />
-// <FormLabel>Date</FormLabel>
-// <Input
-//   isInvalid={error.type === "date"}
-//   variant={"flushed"}
-//   value={startDate?.format("YYYY-MM-DD")}
-//               onChange={(event) => {
-//                 if (moment(event.target.value).isAfter(moment())) {
-//                   console.log("after");
-//                   setError({ err: "Invalid Date", type: "date" });
-//                 } else {
-//                   setStartDate(moment(event.target.value));
-//                   if (error.type === "date")
-//                     setError({
-//                       err: "",
-//                       type: "",
-//                     });
-//                 }
-//               }}
-//               type={"date"}
-//             />
-//           </FormControl>
