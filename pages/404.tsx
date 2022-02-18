@@ -1,4 +1,5 @@
 import { Box, Heading, Text, Button } from "@chakra-ui/react";
+import Head from "next/head";
 import Image from "next/image";
 import router from "next/router";
 import Footer from "../components/layout/footer";
@@ -6,6 +7,9 @@ import Footer from "../components/layout/footer";
 export default function NotFound() {
   return (
     <>
+      <Head>
+        <title>404 Not Found | Slax </title>
+      </Head>
       <Box textAlign="center" py={10} px={6}>
         <Image
           alt="404 Not Found"

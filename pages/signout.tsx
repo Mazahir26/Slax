@@ -6,11 +6,15 @@ import {
   Text,
   useColorModeValue,
 } from "@chakra-ui/react";
+import Head from "next/head";
 import Footer from "../components/layout/footer";
 
 export default function Verification() {
   return (
     <>
+      <Head>
+        <title>Bye Bye | Slax </title>
+      </Head>
       <Flex minH={"85vh"} align={"center"} justify={"center"}>
         <Stack spacing={8} mx={"auto"} maxW={"lg"} py={12} px={6}>
           <Stack align={"center"}>

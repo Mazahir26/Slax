@@ -14,21 +14,38 @@ import {
   Link,
   Spinner,
   useToast,
+  useDisclosure,
 } from "@chakra-ui/react";
 import { CgProfile } from "react-icons/cg";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useRouter } from "next/router";
 import { AiOutlineClose, AiOutlineMenu } from "react-icons/ai";
-import "@fontsource/quicksand/400.css";
+import "@fontsource/quicksand/700.css";
+import WarningModal from "../warningModal";
+import Loading from "./loading";
 // import NextLink from "next/link";
 export default function Navbar() {
   const { data: session, status } = useSession();
   const { toggleColorMode, colorMode } = useColorMode();
   const router = useRouter();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: isLoading,
+    onOpen: Load,
+    onClose: stopLoading,
+  } = useDisclosure();
+
+  const {
+    isOpen: delModalIsOpen,
+    onOpen: delModalOnOpen,
+    onClose: delModalOnClose,
+  } = useDisclosure();
+
   const toast = useToast();
 
   async function DeleteAccount() {
     if (status == "authenticated") {
+      Load();
       try {
         const response = await fetch("/api/deleteAccount", {
           method: "POST",
@@ -57,6 +74,8 @@ export default function Navbar() {
           duration: 5000,
           isClosable: true,
         });
+      } finally {
+        stopLoading();
       }
     }
   }
@@ -103,7 +122,7 @@ export default function Navbar() {
                 <MenuList>
                   <MenuItem
                     onClick={() => {
-                      signOut({ callbackUrl: "/signout" });
+                      onOpen();
                     }}
                   >
                     Sign Out
@@ -111,8 +130,10 @@ export default function Navbar() {
                   <MenuItem onClick={() => toggleColorMode()}>
                     Change Theme
                   </MenuItem>
-                  <MenuItem>About</MenuItem>
-                  <MenuItem onClick={() => DeleteAccount()} color={"red.400"}>
+                  <MenuItem onClick={() => router.push("/about")}>
+                    About
+                  </MenuItem>
+                  <MenuItem onClick={delModalOnOpen} color={"red.400"}>
                     Delete Account
                   </MenuItem>
                 </MenuList>
@@ -144,7 +165,7 @@ export default function Navbar() {
                       }
                       as={IconButton}
                       mx="4"
-                    ></MenuButton>
+                    />
                     <MenuList>
                       <MenuItem
                         onClick={() => {
@@ -158,7 +179,9 @@ export default function Navbar() {
                       <MenuItem onClick={() => toggleColorMode()}>
                         Change Theme
                       </MenuItem>
-                      <MenuItem>About</MenuItem>
+                      <MenuItem onClick={() => router.push("/about")}>
+                        About
+                      </MenuItem>
                     </MenuList>
                   </>
                 )}
@@ -200,6 +223,19 @@ export default function Navbar() {
           </>
         )}
       </Flex>
+      <WarningModal
+        isOpen={isOpen}
+        onClose={onClose}
+        type={"SignOut"}
+        Callback={() => signOut({ callbackUrl: "/signout" })}
+      />
+      <WarningModal
+        isOpen={delModalIsOpen}
+        onClose={delModalOnClose}
+        type={"DeleteAccount"}
+        Callback={() => DeleteAccount()}
+      />
+      <Loading isOpen={isLoading} onClose={stopLoading} />
     </Box>
   );
 }
