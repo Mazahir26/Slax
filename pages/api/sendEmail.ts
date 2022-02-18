@@ -9,12 +9,13 @@ export default async function handler(
   res: NextApiResponse
 ) {
   if (req.method === "POST") {
-    if (req.body.key) {
+    if (!req.body.key) {
       return res.status(401).json({
         msg: "Not Authenticated",
         code: 401,
       });
     }
+
     if (req.body.key != process.env.key) {
       return res.status(401).json({
         msg: "Not Authenticated",
