@@ -75,7 +75,13 @@ export default function Navbar() {
 
         <Spacer />
         {status === "loading" ? (
-          <Spinner colorScheme="brand" />
+          <Spinner
+            size={"md"}
+            emptyColor="gray.300"
+            color="brand.500"
+            speed="0.8s"
+            thickness="2px"
+          />
         ) : session ? (
           <Menu variant={"ghost"} colorScheme={"brand"}>
             {({ isOpen }) => (
