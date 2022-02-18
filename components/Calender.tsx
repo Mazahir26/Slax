@@ -62,33 +62,33 @@ export default function List({
     );
   }, [events]);
 
-  if (view == "agenda") {
-    if (sortedArray.length === 0) {
-      return (
-        <Flex
-          w="full"
-          h="full"
-          flexDirection={"column"}
-          justifyContent={"center"}
-          alignItems="center"
+  if (sortedArray.length === 0) {
+    return (
+      <Flex
+        w="full"
+        h="full"
+        flexDirection={"column"}
+        justifyContent={"center"}
+        alignItems="center"
+      >
+        <Heading textAlign={"center"} mb="7" py="4" size="lg">
+          {`Looks like you haven't added a birthday yet 🤔`}
+        </Heading>
+        <Button
+          boxShadow={"lg"}
+          colorScheme={"brand"}
+          variant="outline"
+          onClick={() => onClickAddBirthday()}
         >
-          <Heading textAlign={"center"} mb="7" py="4" size="lg">
-            {`Looks like you haven't added a birthday yet 🤔`}
-          </Heading>
-          <Button
-            boxShadow={"lg"}
-            colorScheme={"brand"}
-            variant="outline"
-            onClick={() => onClickAddBirthday()}
-          >
-            Add Birthday?
-          </Button>
-        </Flex>
-      );
-    }
+          Add Birthday?
+        </Button>
+      </Flex>
+    );
+  }
+  if (view == "agenda") {
     return (
       <VStack
-        p="6"
+        p={["1", "4", "6"]}
         width={"full"}
         bg={colorMode == "dark" ? "gray.700" : "gray.100"}
         alignItems={"stretch"}
@@ -100,7 +100,7 @@ export default function List({
             index !== 0
           ) {
             return (
-              <Box key={item.user + index} px="2">
+              <Box key={item.user + index} px={["0", "2"]}>
                 <Card
                   onClick={(id) => onClickEvent(id)}
                   key={(item.name + index).toString()}
@@ -112,15 +112,15 @@ export default function List({
                   newDate={
                     index === 0
                       ? true
-                      : item.date.format("DD") !=
-                        sortedArray[index - 1].date.format("DD")
+                      : item.date.format("DD M") !=
+                        sortedArray[index - 1].date.format("DD M")
                   }
                 />
               </Box>
             );
           } else {
             return (
-              <Box key={item.user + index} px="2">
+              <Box key={item.user + index} px={["0", "2"]}>
                 <Heading pt="0.5" py="4" size="lg">
                   {item.date.format("MMMM")} {year.format("YYYY")}
                 </Heading>
@@ -135,8 +135,8 @@ export default function List({
                   newDate={
                     index === 0
                       ? true
-                      : item.date.format("DD") !=
-                        sortedArray[index - 1].date.format("DD")
+                      : item.date.format("DD M") !=
+                        sortedArray[index - 1].date.format("DD M")
                   }
                 />
               </Box>
@@ -149,7 +149,7 @@ export default function List({
 
   return (
     <VStack
-      p="6"
+      p={["1", "4", "6"]}
       width={"full"}
       bg={colorMode == "dark" ? "gray.700" : "gray.100"}
       alignItems={"stretch"}
@@ -166,7 +166,7 @@ export default function List({
                 {year.format("YYYY")}
               </Heading>
 
-              <VStack px="2" width={"full"}>
+              <VStack px={["1", "2"]} width={"full"}>
                 {sortedArray.map((day, index) => {
                   if (
                     day.date.format("MM") ===
@@ -184,8 +184,8 @@ export default function List({
                         newDate={
                           index === 0
                             ? true
-                            : day.date.format("DD") !=
-                              sortedArray[index - 1].date.format("DD")
+                            : day.date.format("DD M") !=
+                              sortedArray[index - 1].date.format("DD M")
                         }
                       />
                     );
@@ -206,7 +206,13 @@ export default function List({
                 boxShadow="md"
                 bg={colorMode === "dark" ? "gray.600" : "white"}
               >
-                <Text m="2" fontSize={"lg"} fontWeight="semibold">
+                <Text
+                  isTruncated
+                  m="2"
+                  noOfLines={1}
+                  fontSize={"lg"}
+                  fontWeight="semibold"
+                >
                   No Birthdays this month 🙁
                 </Text>
               </Box>
