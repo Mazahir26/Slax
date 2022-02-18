@@ -25,7 +25,7 @@ export default async function handler(
     });
   if (req.method === "GET") {
     try {
-      const cli = await client.connect();
+      const cli = await client;
       const database = cli.db("Data");
       const reminders = database.collection<eventData>("reminders");
       const cursor = reminders.find(
@@ -41,9 +41,9 @@ export default async function handler(
         x.date = moment(x.date).toISOString();
         x._id = x._id.toString();
       });
-      cli.close();
       return res.status(200).json(result);
     } catch (e) {
+      console.log(e);
       return res.status(500).json({
         msg: "Ops something went wrong",
         code: 500,

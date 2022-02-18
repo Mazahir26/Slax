@@ -12,12 +12,18 @@ import {
   Text,
   useColorModeValue,
   FormErrorMessage,
+  useToast,
+  Spinner,
 } from "@chakra-ui/react";
 import { Field, Form, Formik } from "formik";
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter } from "next/router";
 import Footer from "../components/layout/footer";
 
 export default function SignIn() {
+  const toast = useToast();
+  const router = useRouter();
+  const { status } = useSession();
   function validateEmail(value: string) {
     let error;
     if (!value) {
@@ -30,6 +36,9 @@ export default function SignIn() {
       error = "Enter a valid Email";
     }
     return error;
+  }
+  if (status === "authenticated") {
+    router.replace("/dashboard");
   }
   return (
     <>
@@ -47,60 +56,86 @@ export default function SignIn() {
             rounded={"lg"}
             bg={useColorModeValue("white", "gray.700")}
             boxShadow={"lg"}
+            alignItems="center"
             p={8}
           >
-            <Formik
-              onSubmit={async (values, actions) => {
-                await signIn("email", {
-                  email: values.email,
-                  callbackUrl: "/dashboard",
-                });
-                actions.setSubmitting(false);
-              }}
-              initialValues={{ email: "" }}
-            >
-              {(props) => {
-                return (
-                  <Form>
-                    <Stack spacing={4}>
-                      <Field name="email" validate={validateEmail}>
-                        {({ field, form }: any) => (
-                          <FormControl
-                            isInvalid={form.errors.email && form.touched.email}
+            {status === "loading" ? (
+              <Flex justifyContent={"center"}>
+                <Spinner
+                  size={"md"}
+                  emptyColor="gray.300"
+                  color="brand.500"
+                  speed="0.8s"
+                  thickness="2px"
+                />
+              </Flex>
+            ) : (
+              <Formik
+                onSubmit={async (values, actions) => {
+                  try {
+                    await signIn("email", {
+                      email: values.email,
+                      callbackUrl: "/dashboard",
+                    });
+                  } catch (error) {
+                    console.log(error);
+                    toast({
+                      position: "bottom-left",
+                      title: "Oops Something went wrong please try again",
+                      status: "error",
+                      duration: 5000,
+                      isClosable: true,
+                    });
+                  }
+                  actions.setSubmitting(false);
+                }}
+                initialValues={{ email: "" }}
+              >
+                {(props) => {
+                  return (
+                    <Form>
+                      <Stack spacing={4}>
+                        <Field name="email" validate={validateEmail}>
+                          {({ field, form }: any) => (
+                            <FormControl
+                              isInvalid={
+                                form.errors.email && form.touched.email
+                              }
+                            >
+                              <FormLabel htmlFor="email">Email</FormLabel>
+                              <Input
+                                {...field}
+                                id="email"
+                                placeholder="eg. john@slax.com"
+                              />
+                              <FormErrorMessage>
+                                {form.errors.email}
+                              </FormErrorMessage>
+                            </FormControl>
+                          )}
+                        </Field>
+                        <Stack spacing={5}>
+                          <Button
+                            colorScheme={"brand"}
+                            color={"white"}
+                            type="submit"
+                            isLoading={props.isSubmitting}
+                            disabled={props.errors.email ? true : false}
                           >
-                            <FormLabel htmlFor="email">Email</FormLabel>
-                            <Input
-                              {...field}
-                              id="email"
-                              placeholder="eg. john@slax.com"
-                            />
-                            <FormErrorMessage>
-                              {form.errors.email}
-                            </FormErrorMessage>
-                          </FormControl>
-                        )}
-                      </Field>
-                      <Stack spacing={5}>
-                        <Button
-                          colorScheme={"brand"}
-                          color={"white"}
-                          type="submit"
-                          isLoading={props.isSubmitting}
-                          disabled={props.errors.email ? true : false}
-                        >
-                          Send Link
-                        </Button>
-                        <Text fontSize={"xs"}>
-                          {` Click “Send Link” to agree to Slax's Terms of Service
+                            Send Link
+                          </Button>
+                          <Text fontSize={"xs"}>
+                            {` Click “Send Link” to agree to Slax's Terms of Service
                           and acknowledge that Slax's Privacy Policy applies to
                           you.`}
-                        </Text>
+                          </Text>
+                        </Stack>
                       </Stack>
-                    </Stack>
-                  </Form>
-                );
-              }}
-            </Formik>
+                    </Form>
+                  );
+                }}
+              </Formik>
+            )}
           </Box>
         </Stack>
       </Flex>

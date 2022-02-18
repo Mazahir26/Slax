@@ -31,15 +31,16 @@ export default async function handler(
       });
     }
     try {
-      const cli = await client.connect();
+      const cli = await client;
       const database = cli.db("Data");
       const reminders = database.collection<rawEvent>("reminders");
       const result = await reminders.deleteOne({
         _id: new ObjectId(req.body._id),
       });
-      cli.close();
       return res.status(200).json(result);
     } catch (e) {
+      console.log(e);
+
       return res.status(500).json({
         msg: "Ops something went wrong",
         code: 500,

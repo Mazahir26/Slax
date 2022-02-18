@@ -24,7 +24,7 @@ export default async function handler(
     });
   if (req.method === "POST") {
     try {
-      const cli = await client.connect();
+      const cli = await client;
       const database = cli.db("Data");
       const reminders = database.collection<rawEvent>("reminders");
       if (!session?.user?.email)
@@ -37,13 +37,14 @@ export default async function handler(
         const database2 = cli.db("auth");
         const users = database2.collection("users");
         const result2 = await users.deleteMany({ email: session.user.email });
-        cli.close();
+
         return res.status(201).json(result2);
       } else {
-        cli.close();
         throw Error("Not acknowledged");
       }
     } catch (e) {
+      console.log(e);
+
       return res.status(500).json({
         msg: "Ops something went wrong",
         code: 500,

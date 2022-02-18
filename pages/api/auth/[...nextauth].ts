@@ -18,7 +18,7 @@ export default NextAuth({
     signOut: "/signout",
     error: "/error",
   },
-  adapter: MongoDBAdapter(client.connect()),
+  adapter: MongoDBAdapter(client),
   session: {
     strategy: "jwt",
   },

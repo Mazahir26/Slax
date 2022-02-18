@@ -30,7 +30,7 @@ export default async function handler(
       });
     }
     try {
-      const cli = await client.connect();
+      const cli = await client;
       const database = cli.db("Data");
       const reminders = database.collection<rawEvent>("reminders");
       if (!session?.user?.email)
@@ -44,9 +44,10 @@ export default async function handler(
         user: session?.user?.email,
         color: req.body.color,
       });
-      cli.close();
       return res.status(201).json(result);
     } catch (e) {
+      console.log(e);
+
       return res.status(500).json({
         msg: "Ops something went wrong",
         code: 500,

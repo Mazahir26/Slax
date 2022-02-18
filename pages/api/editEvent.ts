@@ -31,7 +31,7 @@ export default async function handler(
       });
     }
     try {
-      const cli = await client.connect();
+      const cli = await client;
       const database = cli.db("Data");
       const reminders = database.collection<rawEvent>("reminders");
       const result = await reminders.updateOne(
@@ -49,7 +49,6 @@ export default async function handler(
           upsert: false,
         }
       );
-      cli.close();
       return res.status(200).json(result);
     } catch (e) {
       console.log(e);
