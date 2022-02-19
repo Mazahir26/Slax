@@ -90,8 +90,8 @@ export default async function handler(
           sentEmails.push(userReminders[0].user);
         }
       });
-      mails.map((x) => {
-        sendMail(x.user, x.upcoming, x.today);
+      mails.map(async (x) => {
+        await sendMail(x.user, x.upcoming, x.today);
       });
       return res.status(200).json({
         msg: "Done",
@@ -113,6 +113,9 @@ export default async function handler(
 }
 
 async function sendMail(user: string, Upcoming: string[], Today: string[]) {
+  if (!process.env.EMAIL_SERVER_USER | !process.env.EMAIL_SERVER_PASSWORD) {
+    throw Error("Please make sure you have updated .env.local file");
+  }
   const transporter = nodemailer.createTransport({
     service: "Gmail", // no need to set host or port etc.
     auth: {
@@ -135,7 +138,7 @@ async function sendMail(user: string, Upcoming: string[], Today: string[]) {
 
 function html(Upcoming: string[], birthdaysToday: string[]) {
   return `<!doctype html>
-  <html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office"> 
+  <html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
   <head>
     <title>
     </title>
@@ -148,21 +151,21 @@ function html(Upcoming: string[], birthdaysToday: string[]) {
       #outlook a {
         padding: 0;
       }
-  
+
       body {
         margin: 0;
         padding: 0;
         -webkit-text-size-adjust: 100%;
         -ms-text-size-adjust: 100%;
       }
-  
+
       table,
       td {
         border-collapse: collapse;
         mso-table-lspace: 0pt;
         mso-table-rspace: 0pt;
       }
-  
+
       img {
         border: 0;
         height: auto;
@@ -171,7 +174,7 @@ function html(Upcoming: string[], birthdaysToday: string[]) {
         text-decoration: none;
         -ms-interpolation-mode: bicubic;
       }
-  
+
       p {
         display: block;
         margin: 13px 0;
@@ -209,7 +212,7 @@ function html(Upcoming: string[], birthdaysToday: string[]) {
     <style type="text/css">
     </style>
   </head>
-  
+
   <body style="word-spacing:normal;background-color:#F4F4F4;">
     <div style="background-color:#F4F4F4;">
       <!--[if mso | IE]><table align="center" border="0" cellpadding="0" cellspacing="0" class="" style="width:600px;" width="600" ><tr><td style="line-height:0px;font-size:0px;mso-line-height-rule:exactly;"><![endif]-->
