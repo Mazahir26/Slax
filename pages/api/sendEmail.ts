@@ -90,19 +90,18 @@ export default async function handler(
           sentEmails.push(userReminders[0].user);
         }
       });
-      try {
-        mails.map(async (x) => {
-          await sendMail(x.user, x.upcoming, x.today);
-        });
-        console.log(mails.length);
-        return res.status(200).json({
-          msg: "Done",
-          noofmails: mails.length,
-        });
-      } catch (error) {
-        console.log(error);
-        throw Error("Emails not sent");
-      }
+      const promise = mails.map(async (x) => {
+        return sendMail(x.user, x.upcoming, x.today);
+      });
+      console.log(mails.length);
+      await Promise.all(promise);
+      console.log('ok ma');
+
+      return res.status(200).json({
+        msg: "Done",
+        noofmails: mails.length,
+      });
+  
     } catch (e) {
       console.log(e);
       return res.status(500).json({
@@ -113,7 +112,7 @@ export default async function handler(
     }
   } else {
     return res.status(400).json({
-      msg: "Only GET is allowed in this Api route",
+      msg: "Only POST is allowed in this Api route",
       code: 400,
     });
   }
