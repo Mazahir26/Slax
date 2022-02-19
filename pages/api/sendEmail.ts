@@ -113,7 +113,7 @@ export default async function handler(
 }
 
 async function sendMail(user: string, Upcoming: string[], Today: string[]) {
-  if (!process.env.EMAIL_SERVER_USER | !process.env.EMAIL_SERVER_PASSWORD) {
+  if (!process.env.EMAIL_SERVER_USER || !process.env.EMAIL_SERVER_PASSWORD) {
     throw Error("Please make sure you have updated .env.local file");
   }
   const transporter = nodemailer.createTransport({
