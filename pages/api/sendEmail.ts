@@ -90,12 +90,19 @@ export default async function handler(
           sentEmails.push(userReminders[0].user);
         }
       });
-      mails.map(async (x) => {
-        await sendMail(x.user, x.upcoming, x.today);
-      });
-      return res.status(200).json({
-        msg: "Done",
-      });
+      try {
+        mails.map(async (x) => {
+          await sendMail(x.user, x.upcoming, x.today);
+        });
+        console.log(mails.length);
+        return res.status(200).json({
+          msg: "Done",
+          noofmails: mails.length,
+        });
+      } catch (error) {
+        console.log(error);
+        throw Error("Emails not sent");
+      }
     } catch (e) {
       console.log(e);
       return res.status(500).json({
@@ -116,14 +123,14 @@ async function sendMail(user: string, Upcoming: string[], Today: string[]) {
   if (!process.env.EMAIL_SERVER_USER || !process.env.EMAIL_SERVER_PASSWORD) {
     throw Error("Please make sure you have updated .env.local file");
   }
-  const transporter = nodemailer.createTransport({
-    service: "Gmail", // no need to set host or port etc.
-    auth: {
-      user: process.env.EMAIL_SERVER_USER,
-      pass: process.env.EMAIL_SERVER_PASSWORD,
-    },
-  });
   try {
+    const transporter = nodemailer.createTransport({
+      service: "Gmail", // no need to set host or port etc.
+      auth: {
+        user: process.env.EMAIL_SERVER_USER,
+        pass: process.env.EMAIL_SERVER_PASSWORD,
+      },
+    });
     return await transporter.sendMail({
       to: user,
       from: "Slax",
