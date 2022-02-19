@@ -93,15 +93,11 @@ export default async function handler(
       const promise = mails.map(async (x) => {
         return sendMail(x.user, x.upcoming, x.today);
       });
-      console.log(mails.length);
       await Promise.all(promise);
-      console.log('ok ma');
-
       return res.status(200).json({
         msg: "Done",
         noofmails: mails.length,
       });
-  
     } catch (e) {
       console.log(e);
       return res.status(500).json({
