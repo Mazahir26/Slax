@@ -8,15 +8,20 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const curTime = parseInt(moment().format("kkmm"));
-  if (!(curTime > 800 && curTime < 900)) {
-    return res.status(400).json({
-      msg: "Not the right time",
-      code: 400,
-    });
-  }
+  if (req.method === "POST") {
+    if (!req.body.key) {
+      return res.status(401).json({
+        msg: "Not Authenticated",
+        code: 401,
+      });
+    }
 
-  if (req.method === "GET") {
+    if (req.body.key != process.env.key) {
+      return res.status(401).json({
+        msg: "Not Authenticated",
+        code: 401,
+      });
+    }
     try {
       const cli = await client;
       const database = cli.db("Data");
@@ -24,7 +29,7 @@ export default async function handler(
       const cursor = collection.find(
         {},
         {
-          projection: { _id: 0, date: 1, name: 1, user: 1, color: 0 },
+          projection: { _id: 0, date: 1, name: 1, user: 1 },
         }
       );
       const data = await cursor.toArray();
@@ -85,13 +90,16 @@ export default async function handler(
           sentEmails.push(userReminders[0].user);
         }
       });
-      mails.map((x) => {
-        sendMail(x.user, x.upcoming, x.today);
+      const promise = mails.map(async (x) => {
+        return sendMail(x.user, x.upcoming, x.today);
       });
+      await Promise.all(promise);
       return res.status(200).json({
         msg: "Done",
+        noofmails: mails.length,
       });
     } catch (e) {
+      console.log(e);
       return res.status(500).json({
         msg: "Ops something went wrong",
         code: 500,
@@ -100,21 +108,24 @@ export default async function handler(
     }
   } else {
     return res.status(400).json({
-      msg: "Only GET is allowed in this Api route",
+      msg: "Only POST is allowed in this Api route",
       code: 400,
     });
   }
 }
 
 async function sendMail(user: string, Upcoming: string[], Today: string[]) {
-  const transporter = nodemailer.createTransport({
-    service: "Gmail", // no need to set host or port etc.
-    auth: {
-      user: process.env.EMAIL_SERVER_USER,
-      pass: process.env.EMAIL_SERVER_PASSWORD,
-    },
-  });
+  if (!process.env.EMAIL_SERVER_USER || !process.env.EMAIL_SERVER_PASSWORD) {
+    throw Error("Please make sure you have updated .env.local file");
+  }
   try {
+    const transporter = nodemailer.createTransport({
+      service: "Gmail", // no need to set host or port etc.
+      auth: {
+        user: process.env.EMAIL_SERVER_USER,
+        pass: process.env.EMAIL_SERVER_PASSWORD,
+      },
+    });
     return await transporter.sendMail({
       to: user,
       from: "Slax",
@@ -129,7 +140,7 @@ async function sendMail(user: string, Upcoming: string[], Today: string[]) {
 
 function html(Upcoming: string[], birthdaysToday: string[]) {
   return `<!doctype html>
-  <html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office"> 
+  <html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
   <head>
     <title>
     </title>
@@ -142,21 +153,21 @@ function html(Upcoming: string[], birthdaysToday: string[]) {
       #outlook a {
         padding: 0;
       }
-  
+
       body {
         margin: 0;
         padding: 0;
         -webkit-text-size-adjust: 100%;
         -ms-text-size-adjust: 100%;
       }
-  
+
       table,
       td {
         border-collapse: collapse;
         mso-table-lspace: 0pt;
         mso-table-rspace: 0pt;
       }
-  
+
       img {
         border: 0;
         height: auto;
@@ -165,7 +176,7 @@ function html(Upcoming: string[], birthdaysToday: string[]) {
         text-decoration: none;
         -ms-interpolation-mode: bicubic;
       }
-  
+
       p {
         display: block;
         margin: 13px 0;
@@ -203,7 +214,7 @@ function html(Upcoming: string[], birthdaysToday: string[]) {
     <style type="text/css">
     </style>
   </head>
-  
+
   <body style="word-spacing:normal;background-color:#F4F4F4;">
     <div style="background-color:#F4F4F4;">
       <!--[if mso | IE]><table align="center" border="0" cellpadding="0" cellspacing="0" class="" style="width:600px;" width="600" ><tr><td style="line-height:0px;font-size:0px;mso-line-height-rule:exactly;"><![endif]-->

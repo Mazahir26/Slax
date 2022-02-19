@@ -50,8 +50,8 @@ const Home: NextPage = (props) => {
           </Heading>
           <Text color={"gray.500"}>
             {`
-            It's very easy create an account, add birthdays and forget about it.
-            We will make sure that you remember there birthday, So that you can
+            You ask how? It's very easy create an account, add birthdays and forget about it.
+            We will make sure that you remember their birthday, So you can
             focus on planing an surprise for them 😉.`}
           </Text>
           <Stack

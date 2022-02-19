@@ -25,7 +25,7 @@ export default function About() {
         <Box pt="5">
           <Text fontSize={"xl"}>
             This is a Simple website, Which does one thing reminds you to wish
-            people on there birthdays.
+            people on their birthdays.
           </Text>
         </Box>
         <Heading mt={10} size={"2xl"}>
