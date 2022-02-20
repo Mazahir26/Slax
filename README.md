@@ -64,3 +64,5 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 ## Thank You
 
 Thanks for checking out my project, I would love to see your implementations of the project, you can [contact](http://mazahir26.github.io/) me via Mail or Telegram.
+
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/mazahir)
