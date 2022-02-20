@@ -98,7 +98,7 @@ export default async function handler(
       });
       await Promise.all(promise);
       if (process.env.monitor_02) {
-        fetch(process.env.monitor_02);
+        await fetch(process.env.monitor_02);
       }
 
       return res.status(200).json({
