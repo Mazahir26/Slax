@@ -22,6 +22,9 @@ export default async function handler(
         code: 401,
       });
     }
+    if (process.env.monitor_01) {
+      fetch(process.env.monitor_01);
+    }
     try {
       const cli = await client;
       const database = cli.db("Data");
@@ -90,11 +93,14 @@ export default async function handler(
           sentEmails.push(userReminders[0].user);
         }
       });
-
       const promise = mails.map(async (x) => {
         return sendMail(x.user, x.upcoming, x.today);
       });
       await Promise.all(promise);
+      if (process.env.monitor_02) {
+        fetch(process.env.monitor_02);
+      }
+
       return res.status(200).json({
         msg: "Done",
         noOfMails: mails.length,
