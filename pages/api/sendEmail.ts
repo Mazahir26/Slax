@@ -43,56 +43,51 @@ export default async function handler(
         });
       }
       data.map((x) => {
-        x.date = moment(x.date);
+        x.date = moment(x.date).set("years", moment().year());
       });
 
-      let sentEmails: string[] = [];
       let mails: {
         user: string;
         upcoming: string[];
         today: string[];
       }[] = [];
-      data.map((x) => {
-        if (!sentEmails.includes(x.user)) {
-          const userReminders = data.filter(
-            (val) =>
-              val.user === x.user &&
-              Math.abs(
-                moment().diff(val.date.set("years", moment().year()), "days")
-              ) <= 3
-          );
-          if (userReminders.length === 0) {
-            return;
-          }
-          const Today = userReminders
-            .filter((x) => x.date.format("MMM,D") === moment().format("MMM,D"))
-            .sort((a, b) =>
-              a.name.toUpperCase() > b.name.toUpperCase()
-                ? 1
-                : b.name.toUpperCase() > a.name.toUpperCase()
-                ? -1
-                : 0
-            )
-            .map((x) => `${x.name}.`);
 
-          const Upcoming = userReminders
-            .sort((a, b) =>
-              moment(a.date)
-                .set("year", moment().year())
-                .diff(moment(b.date).set("year", moment().year()))
-            )
-            .filter((x) => x.date.format("MM,D") != moment().format("MM,D"))
-            .map(
-              (x) => `${x.name}'s birthday on ${x.date.format("Do [of] MMM")}.`
-            );
+      const obj: string[] = data
+        .map((item) => item.user)
+        .filter((value, index, self) => self.indexOf(value) === index);
+
+      obj.map((value) => {
+        const userReminders = data.filter((val) => val.user === value);
+        if (userReminders.length === 0) {
+          return;
+        }
+        const Today = userReminders
+          .filter((x) => x.date.format("MMM,D") === moment().format("MMM,D"))
+          .sort((a, b) =>
+            a.name.toUpperCase() > b.name.toUpperCase()
+              ? 1
+              : b.name.toUpperCase() > a.name.toUpperCase()
+              ? -1
+              : 0
+          )
+          .map((x) => `${x.name}.`);
+        const Upcoming = userReminders
+          .sort((a, b) =>
+            moment(a.date).diff(moment(b.date).set("year", moment().year()))
+          )
+          .filter((x) => x.date.isBetween(moment(), moment().add(3, "days")))
+          .map(
+            (x) => `${x.name}'s birthday on ${x.date.format("Do [of] MMM")}.`
+          );
+        if (Upcoming.length > 0 || Today.length > 0) {
           mails.push({
-            user: userReminders[0].user,
+            user: value,
             today: Today,
             upcoming: Upcoming,
           });
-          sentEmails.push(userReminders[0].user);
         }
       });
+
       const promise = mails.map(async (x) => {
         return sendMail(x.user, x.upcoming, x.today);
       });
@@ -100,7 +95,6 @@ export default async function handler(
       if (process.env.monitor_02) {
         await fetch(process.env.monitor_02);
       }
-
       return res.status(200).json({
         msg: "Done",
         noOfMails: mails.length,
