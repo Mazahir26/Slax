@@ -22,9 +22,7 @@ export default async function handler(
         code: 401,
       });
     }
-    if (process.env.monitor_01) {
-      fetch(process.env.monitor_01);
-    }
+
     try {
       const cli = await client;
       const database = cli.db("Data");
@@ -43,7 +41,7 @@ export default async function handler(
         });
       }
       data.map((x) => {
-        x.date = moment(x.date).set("years", moment().year());
+        x.date = moment(x.date).set("years", moment().year()).startOf("day");
       });
 
       let mails: {
@@ -75,7 +73,11 @@ export default async function handler(
           .sort((a, b) =>
             moment(a.date).diff(moment(b.date).set("year", moment().year()))
           )
-          .filter((x) => x.date.isBetween(moment(), moment().add(3, "days")))
+          .filter(
+            (x) =>
+              x.date.isBetween(moment(), moment().add(3, "days")) &&
+              x.date.format("MMM,D") != moment().format("MMM,D")
+          )
           .map(
             (x) => `${x.name}'s birthday on ${x.date.format("Do [of] MMM")}.`
           );
@@ -92,12 +94,11 @@ export default async function handler(
         return sendMail(x.user, x.upcoming, x.today);
       });
       await Promise.all(promise);
-      if (process.env.monitor_02) {
-        await fetch(process.env.monitor_02);
-      }
+
       return res.status(200).json({
         msg: "Done",
         noOfMails: mails.length,
+        mails: mails,
       });
     } catch (e) {
       console.log(e);

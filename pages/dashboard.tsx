@@ -107,7 +107,7 @@ const Dashboard: NextPage = ({}) => {
           },
           body: JSON.stringify({
             name: event.name,
-            date: event.date.toISOString(),
+            date: event.date.startOf("day").toISOString(),
             color: event.color,
           }),
         });
@@ -216,7 +216,7 @@ const Dashboard: NextPage = ({}) => {
             _id: event._id,
             name: event.name,
             color: event.color,
-            date: event.date.toISOString(),
+            date: event.date.startOf("day").toISOString(),
           }),
         });
         if (response.status !== 200) {
