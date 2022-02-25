@@ -142,7 +142,7 @@ const Dashboard: NextPage = ({}) => {
       } catch (error) {
         toast({
           position: "bottom-left",
-          title: "Ops something went wrong!",
+          title: "Oops something went wrong!",
           status: "error",
           description: `Try again later..:(`,
           duration: 5000,
@@ -191,7 +191,7 @@ const Dashboard: NextPage = ({}) => {
         console.log(error);
         toast({
           position: "bottom-left",
-          title: "Ops something went wrong!",
+          title: "Oops something went wrong!",
           status: "error",
           description: `Try again later..:(`,
           duration: 5000,
@@ -249,7 +249,7 @@ const Dashboard: NextPage = ({}) => {
         console.log(error);
         toast({
           position: "bottom-left",
-          title: "Ops something went wrong!",
+          title: "Oops something went wrong!",
           status: "error",
           description: `Try again later..:(`,
           duration: 5000,

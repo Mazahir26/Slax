@@ -38,14 +38,14 @@ export default async function handler(
       );
       const result = await cursor.toArray();
       result.map((x) => {
-        x.date = moment(x.date).startOf("day").toISOString();
+        x.date = moment(x.date).startOf("day").toISOString(true);
         x._id = x._id.toString();
       });
       return res.status(200).json(result);
     } catch (e) {
       console.log(e);
       return res.status(500).json({
-        msg: "Ops something went wrong",
+        msg: "Oops something went wrong",
         code: 500,
       });
     }

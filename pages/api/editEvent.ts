@@ -1,3 +1,4 @@
+import moment from "moment";
 import { MongoClient, ObjectId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getSession } from "next-auth/react";
@@ -42,7 +43,9 @@ export default async function handler(
           $set: {
             name: req.body.name,
             color: req.body.color,
-            date: new Date(req.body.date),
+            date: new Date(
+              moment(req.body.date).startOf("day").toISOString(true)
+            ),
           },
         },
         {
@@ -53,7 +56,7 @@ export default async function handler(
     } catch (e) {
       console.log(e);
       return res.status(500).json({
-        msg: "Ops something went wrong",
+        msg: "Oops something went wrong",
         code: 500,
       });
     }

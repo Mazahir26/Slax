@@ -103,7 +103,7 @@ export default async function handler(
     } catch (e) {
       console.log(e);
       return res.status(500).json({
-        msg: "Ops something went wrong",
+        msg: "Oops something went wrong",
         code: 500,
         err: e,
       });

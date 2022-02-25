@@ -1,3 +1,4 @@
+import moment from "moment";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getSession } from "next-auth/react";
 import { rawEvent } from "../../components/types";
@@ -38,8 +39,9 @@ export default async function handler(
           msg: "You need to be authenticated",
           code: 401,
         });
+
       const result = await reminders.insertOne({
-        date: new Date(req.body.date),
+        date: new Date(moment(req.body.date).startOf("day").toISOString(true)),
         name: req.body.name,
         user: session?.user?.email,
         color: req.body.color,
@@ -49,7 +51,7 @@ export default async function handler(
       console.log(e);
 
       return res.status(500).json({
-        msg: "Ops something went wrong",
+        msg: "Oops something went wrong",
         code: 500,
       });
     }
