@@ -35,6 +35,7 @@ export default async function handler(
       const cli = await client;
       const database = cli.db("Data");
       const reminders = database.collection<rawEvent>("reminders");
+      const date = new Date(req.body.date);
       const result = await reminders.updateOne(
         {
           _id: new ObjectId(req.body._id),
@@ -43,9 +44,7 @@ export default async function handler(
           $set: {
             name: req.body.name,
             color: req.body.color,
-            date: new Date(
-              moment(req.body.date).startOf("day").toISOString(true)
-            ),
+            date: date,
           },
         },
         {

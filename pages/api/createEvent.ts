@@ -41,7 +41,7 @@ export default async function handler(
         });
 
       const result = await reminders.insertOne({
-        date: new Date(moment(req.body.date).startOf("day").toISOString(true)),
+        date: new Date(moment(req.body.date).toISOString()),
         name: req.body.name,
         user: session?.user?.email,
         color: req.body.color,

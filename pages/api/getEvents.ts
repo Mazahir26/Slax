@@ -38,7 +38,7 @@ export default async function handler(
       );
       const result = await cursor.toArray();
       result.map((x) => {
-        x.date = moment(x.date).startOf("day").toISOString(true);
+        x.date = moment(x.date).toISOString();
         x._id = x._id.toString();
       });
       return res.status(200).json(result);

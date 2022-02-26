@@ -28,6 +28,7 @@ export async function getEvents({
       }
 
       const body: event[] = await response.json();
+      console.log(body);
       const temp = body.map((item: event) => {
         return {
           name: item.name,

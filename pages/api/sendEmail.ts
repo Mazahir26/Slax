@@ -41,7 +41,7 @@ export default async function handler(
         });
       }
       data.map((x) => {
-        x.date = moment(x.date).set("years", moment().year()).startOf("day");
+        x.date = moment(x.date.toISOString()).set("years", moment().year());
       });
 
       let mails: {
@@ -71,12 +71,15 @@ export default async function handler(
           .map((x) => `${x.name}.`);
         const Upcoming = userReminders
           .sort((a, b) =>
-            moment(a.date).diff(moment(b.date).set("year", moment().year()))
+            moment(a.date)
+              .set("year", moment().year())
+              .diff(moment(b.date).set("year", moment().year()))
           )
           .filter(
             (x) =>
-              x.date.isBetween(moment(), moment().add(3, "days")) &&
-              x.date.format("MMM,D") != moment().format("MMM,D")
+              x.date.date() - moment().date() <= 3 &&
+              x.date.date() - moment().date() > 0 &&
+              x.date.month() === moment().month()
           )
           .map(
             (x) => `${x.name}'s birthday on ${x.date.format("Do [of] MMM")}.`
@@ -89,11 +92,10 @@ export default async function handler(
           });
         }
       });
-
-      const promise = mails.map(async (x) => {
-        return sendMail(x.user, x.upcoming, x.today);
-      });
-      await Promise.all(promise);
+      // const promise = mails.map(async (x) => {
+      //   return sendMail(x.user, x.upcoming, x.today);
+      // });
+      // await Promise.all(promise);
 
       return res.status(200).json({
         msg: "Done",
