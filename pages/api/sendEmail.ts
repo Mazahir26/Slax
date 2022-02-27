@@ -71,7 +71,9 @@ export default async function handler(
               ? -1
               : 0
           )
-          .map((x) => `${x.name}.`);
+          .map(
+            (x) => `${x.name}'s birthday on ${x.date.format("Do [of] MMM")}.`
+          );
         const Upcoming = userReminders
           .sort((a, b) =>
             moment(a.date)
@@ -99,7 +101,7 @@ export default async function handler(
       //   return sendMail(x.user, x.upcoming, x.today);
       // });
       // await Promise.all(promise);
-
+      console.log(moment().toString(), moment().toISOString());
       return res.status(200).json({
         msg: "Done",
         noOfMails: mails.length,
