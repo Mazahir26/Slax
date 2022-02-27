@@ -60,7 +60,9 @@ export default async function handler(
         }
         const Today = userReminders
           .filter(
-            (x) => x.date.local().format("MMM,D") === moment().format("MMM,D")
+            (x) =>
+              x.date.utc(true).format("MMM,D") ===
+              moment().utc(true).format("MMM,D")
           )
           .sort((a, b) =>
             a.name.toUpperCase() > b.name.toUpperCase()
@@ -69,9 +71,7 @@ export default async function handler(
               ? -1
               : 0
           )
-          .map(
-            (x) => `${x.name}'s birthday on ${x.date.format("Do [of] MMM")}.`
-          );
+          .map((x) => `${x.name}.`);
         const Upcoming = userReminders
           .sort((a, b) =>
             moment(a.date)
@@ -80,12 +80,15 @@ export default async function handler(
           )
           .filter(
             (x) =>
-              x.date.local().date() - moment().date() <= 3 &&
-              x.date.local().date() - moment().date() > 0 &&
-              x.date.local().month() === moment().month()
+              x.date.utc(true).date() - moment().utc().date() <= 3 &&
+              x.date.utc(true).date() - moment().utc().date() > 0 &&
+              x.date.utc(true).month() === moment().utc().month()
           )
           .map(
-            (x) => `${x.name}'s birthday on ${x.date.format("Do [of] MMM")}.`
+            (x) =>
+              `${x.name}'s birthday on ${x.date
+                .utc(true)
+                .format("Do [of] MMM")}.`
           );
         if (Upcoming.length > 0 || Today.length > 0) {
           mails.push({
