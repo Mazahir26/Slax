@@ -104,14 +104,13 @@ export default async function handler(
           });
         }
       });
-      // const promise = mails.map(async (x) => {
-      //   return sendMail(x.user, x.upcoming, x.today);
-      // });
-      // await Promise.all(promise);
+      const promise = mails.map(async (x) => {
+        return sendMail(x.user, x.upcoming, x.today);
+      });
+      await Promise.all(promise);
       return res.status(200).json({
         msg: "Done",
         noOfMails: mails.length,
-        mails: mails,
       });
     } catch (e) {
       console.log(e);
