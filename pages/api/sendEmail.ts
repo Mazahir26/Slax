@@ -21,7 +21,12 @@ export default async function handler(
         code: 401,
       });
     }
-
+    if (!req.body.date) {
+      return res.status(401).json({
+        msg: "Please pass date as well",
+        code: 401,
+      });
+    }
     try {
       const cli = await client;
       const database = cli.db("Data");
@@ -40,7 +45,10 @@ export default async function handler(
         });
       }
       data.map((x) => {
-        x.date = moment(x.date.toISOString()).set("years", moment().year());
+        x.date = moment(x.date.toISOString()).set(
+          "years",
+          moment(req.body.date).year()
+        );
       });
 
       let mails: {
@@ -59,7 +67,10 @@ export default async function handler(
           return;
         }
         const Today = userReminders
-          .filter((x) => x.date.format("MMM,D") === moment().format("MMM,D"))
+          .filter(
+            (x) =>
+              x.date.format("MMM,D") === moment(req.body.date).format("MMM,D")
+          )
           .sort((a, b) =>
             a.name.toUpperCase() > b.name.toUpperCase()
               ? 1
@@ -78,8 +89,8 @@ export default async function handler(
           )
           .filter(
             (x) =>
-              x.date.date() - moment().date() <= 3 &&
-              x.date.date() - moment().date() > 0 &&
+              x.date.date() - moment(req.body.date).date() <= 3 &&
+              x.date.date() - moment(req.body.date).date() > 0 &&
               x.date.month() === moment().month()
           )
           .map(
@@ -97,7 +108,11 @@ export default async function handler(
       //   return sendMail(x.user, x.upcoming, x.today);
       // });
       // await Promise.all(promise);
-      console.log(moment().toString(), moment().toISOString());
+      console.log(
+        req.body.date,
+        moment(req.body.date).toString(),
+        moment(req.body.date).toISOString()
+      );
       return res.status(200).json({
         msg: "Done",
         noOfMails: mails.length,
