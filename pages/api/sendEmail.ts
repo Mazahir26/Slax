@@ -61,8 +61,8 @@ export default async function handler(
         const Today = userReminders
           .filter(
             (x) =>
-              x.date.utc(true).format("MMM,D") ===
-              moment().utc(true).format("MMM,D")
+              x.date.utc().utcOffset("+05:30.").format("MMM,D") ===
+              moment().utc().utcOffset("+05:30.").format("MMM,D")
           )
           .sort((a, b) =>
             a.name.toUpperCase() > b.name.toUpperCase()
@@ -80,14 +80,20 @@ export default async function handler(
           )
           .filter(
             (x) =>
-              x.date.utc(true).date() - moment().utc().date() <= 3 &&
-              x.date.utc(true).date() - moment().utc().date() > 0 &&
-              x.date.utc(true).month() === moment().utc().month()
+              x.date.utc().utcOffset("+05:30.").date() -
+                moment().utc().utcOffset("+05:30.").date() <=
+                3 &&
+              x.date.utc().utcOffset("+05:30.").date() -
+                moment().utc().utcOffset("+05:30.").date() >
+                0 &&
+              x.date.utc().utcOffset("+05:30.").month() ===
+                moment().utc().utcOffset("+05:30.").month()
           )
           .map(
             (x) =>
               `${x.name}'s birthday on ${x.date
-                .utc(true)
+                .utc()
+                .utcOffset("+05:30.")
                 .format("Do [of] MMM")}.`
           );
         if (Upcoming.length > 0 || Today.length > 0) {
