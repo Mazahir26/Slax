@@ -2,7 +2,7 @@ import nodemailer from "nodemailer";
 import type { NextApiRequest, NextApiResponse } from "next";
 import client from "../../lib/mongodb";
 import { event } from "../../components/types";
-import moment from "moment-timezone";
+import moment from "moment";
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -59,11 +59,7 @@ export default async function handler(
           return;
         }
         const Today = userReminders
-          .filter(
-            (x) =>
-              x.date.format("MMM,D") ===
-              moment().tz("Asia/Kolkata").format("MMM,D")
-          )
+          .filter((x) => x.date.format("MMM,D") === moment().format("MMM,D"))
           .sort((a, b) =>
             a.name.toUpperCase() > b.name.toUpperCase()
               ? 1
@@ -82,8 +78,8 @@ export default async function handler(
           )
           .filter(
             (x) =>
-              x.date.date() - moment().tz("Asia/Kolkata").date() <= 3 &&
-              x.date.date() - moment().tz("Asia/Kolkata").date() > 0 &&
+              x.date.date() - moment().date() <= 3 &&
+              x.date.date() - moment().date() > 0 &&
               x.date.month() === moment().month()
           )
           .map(
