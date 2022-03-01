@@ -16,9 +16,10 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import { Field, Form, Formik } from "formik";
-import { signIn, useSession } from "next-auth/react";
+import { getSession, signIn, useSession } from "next-auth/react";
 import Head from "next/head";
 import { useRouter } from "next/router";
+import { GetServerSideProps } from "next/types";
 import Footer from "../components/layout/footer";
 
 export default function SignIn() {
@@ -146,3 +147,19 @@ export default function SignIn() {
     </>
   );
 }
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const session = await getSession(context);
+  // context.res.writeHead(401, { Location: "/dashboard" });
+  if (session) {
+    return {
+      redirect: {
+        destination: "/dashboard",
+        permanent: false,
+      },
+    };
+  }
+  return {
+    props: {},
+  };
+};

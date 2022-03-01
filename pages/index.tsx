@@ -10,8 +10,8 @@ import {
   createIcon,
   Spacer,
 } from "@chakra-ui/react";
-import type { NextPage } from "next";
-import { signIn, useSession } from "next-auth/react";
+import type { GetServerSideProps, NextPage } from "next";
+import { getSession, signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Footer from "../components/layout/footer";
 import "@fontsource/caveat/400.css";
@@ -94,7 +94,7 @@ const Home: NextPage = (props) => {
                   colorScheme={"brand"}
                   size={"sm"}
                 >
-                  Have a account. Sign in instead?
+                  Have an account. Sign in instead?
                 </Button>
 
                 <Box display={["none", "initial"]}>
@@ -139,5 +139,21 @@ const Arrow = createIcon({
     />
   ),
 });
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const session = await getSession(context);
+  // context.res.writeHead(401, { Location: "/dashboard" });
+  if (session) {
+    return {
+      redirect: {
+        destination: "/dashboard",
+        permanent: false,
+      },
+    };
+  }
+  return {
+    props: {},
+  };
+};
 
 export default Home;
