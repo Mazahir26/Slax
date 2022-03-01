@@ -21,7 +21,7 @@ export default async function handler(
         code: 401,
       });
     }
-
+    const todayDay = moment().utc().utcOffset("+05:30.");
     try {
       const cli = await client;
       const database = cli.db("Data");
@@ -62,7 +62,7 @@ export default async function handler(
           .filter(
             (x) =>
               x.date.utc().utcOffset("+05:30.").format("MMM,D") ===
-              moment().utc().utcOffset("+05:30.").format("MMM,D")
+              todayDay.format("MMM,D")
           )
           .sort((a, b) =>
             a.name.toUpperCase() > b.name.toUpperCase()
@@ -80,14 +80,9 @@ export default async function handler(
           )
           .filter(
             (x) =>
-              x.date.utc().utcOffset("+05:30.").date() -
-                moment().utc().utcOffset("+05:30.").date() <=
-                3 &&
-              x.date.utc().utcOffset("+05:30.").date() -
-                moment().utc().utcOffset("+05:30.").date() >
-                0 &&
-              x.date.utc().utcOffset("+05:30.").month() ===
-                moment().utc().utcOffset("+05:30.").month()
+              x.date.utc().utcOffset("+05:30.").date() - todayDay.date() <= 3 &&
+              x.date.utc().utcOffset("+05:30.").date() - todayDay.date() > 0 &&
+              x.date.utc().utcOffset("+05:30.").month() === todayDay.month()
           )
           .map(
             (x) =>
