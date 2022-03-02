@@ -1,5 +1,4 @@
-import { Box, Flex, Heading, Text } from "@chakra-ui/react";
-import { CloseIcon } from "@chakra-ui/icons";
+import { Box, Heading, Text } from "@chakra-ui/react";
 import { useRouter } from "next/router";
 import Image from "next/image";
 import Head from "next/head";

@@ -6,12 +6,14 @@ export interface eventData {
   user: string;
   _id: string;
   color: string;
+  isUser?: boolean;
 }
 export interface rawEvent {
   name: string;
   date: Date;
   user: string;
   color: string;
+  isUser?: boolean;
 }
 
 export interface event {
@@ -20,4 +22,5 @@ export interface event {
   user: string;
   _id: string;
   color: string;
+  isUser?: boolean;
 }

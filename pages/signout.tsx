@@ -5,11 +5,43 @@ import {
   Heading,
   Text,
   useColorModeValue,
+  useDisclosure,
+  Spinner,
 } from "@chakra-ui/react";
+import { signOut, useSession } from "next-auth/react";
 import Head from "next/head";
+import { useEffect } from "react";
 import Footer from "../components/layout/footer";
+import WarningModal from "../components/warningModal";
 
 export default function Verification() {
+  const session = useSession();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+
+  useEffect(() => {
+    if (session.status == "authenticated") {
+      onOpen();
+    }
+  });
+  if (session.status == "authenticated") {
+    return (
+      <Flex minH={"85vh"} align={"center"} justify={"center"}>
+        <WarningModal
+          isOpen={isOpen}
+          onClose={onClose}
+          type={"SignOut"}
+          Callback={() => signOut({ callbackUrl: "/signout" })}
+        />
+        <Spinner
+          size={"xl"}
+          emptyColor="gray.300"
+          color="brand.500"
+          speed="0.8s"
+          thickness="4px"
+        />
+      </Flex>
+    );
+  }
   return (
     <>
       <Head>

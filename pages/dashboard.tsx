@@ -15,13 +15,17 @@ import Calender from "../components/Calender";
 import TopBar from "../components/TopBar";
 import AddBirthdayModal from "../components/Modal";
 import { useSession } from "next-auth/react";
-import { event, rawEvent } from "../components/types";
-import { InsertOneResult, DeleteResult, UpdateResult } from "mongodb";
+import { event } from "../components/types";
 import Loading from "../components/layout/loading";
 import { Skeleton, SkeletonCircle } from "@chakra-ui/react";
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { getEvents } from "../lib/helperFunctions";
+import {
+  getEvents,
+  addEvent as AddEvent,
+  deleteEvent as DeleteEvent,
+  editEvent as EditEvent,
+} from "../lib/helperFunctions";
 
 const Dashboard: NextPage = ({}) => {
   const [events, setEvents] = useState<event[]>([]);
@@ -41,17 +45,22 @@ const Dashboard: NextPage = ({}) => {
   const { data: session, status } = useSession();
   const { colorMode } = useColorMode();
   const toast = useToast();
+  ``;
   const [selectedEvent, setSelectedEvent] = useState<event | null>(null);
   const [view, setView] = useState<"agenda" | "month">("agenda");
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    getEvents({
-      router: router,
-      setEvents: setEvents,
-      setIsConnected: setIsConnected,
-      status: status,
-    });
+    if (status === "authenticated") {
+      getEvents({
+        setEvents: setEvents,
+      })
+        .catch((err) => {
+          router.push("/error?error=ServerError");
+          console.log(err);
+        })
+        .finally(() => setIsConnected(true));
+    }
   }, [status]);
 
   if (status === "unauthenticated") {
@@ -64,7 +73,7 @@ const Dashboard: NextPage = ({}) => {
         justifyContent="center"
         alignItems={"center"}
       >
-        <Heading>you need to be authenticated</Heading>
+        <Heading>You need to be authenticated</Heading>
       </Flex>
     );
   }
@@ -92,152 +101,12 @@ const Dashboard: NextPage = ({}) => {
     );
   }
 
-  async function addEvent(event: {
-    name: string;
-    date: moment.Moment;
-    color: string;
-  }) {
-    if (session?.user?.email) {
-      try {
-        setLoading();
-        const response = await fetch("/api/createEvent", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: event.name,
-            date: event.date.toISOString(),
-            color: event.color,
-          }),
-        });
-        if (response.status !== 201) {
-          throw Error(response.status.toString());
-        }
-        const body: InsertOneResult<rawEvent> = await response.json();
-
-        if (body.acknowledged) {
-          const insertData: event = {
-            _id: body.insertedId.toString(),
-            date: moment(event.date),
-            name: event.name,
-            user: session.user.email,
-            color: event.color,
-          };
-
-          setEvents([...events, insertData]);
-        } else {
-          throw Error("Not Acknowledged");
-        }
-        toast({
-          position: "bottom-left",
-          title: "Birthday Added. 🎉",
-          status: "success",
-          description: `We will remind you to wish ${event.name} on ${moment(
-            event.date
-          ).format("MMM Do")} every year`,
-          duration: 5000,
-          isClosable: true,
-        });
-      } catch (error) {
-        toast({
-          position: "bottom-left",
-          title: "Oops something went wrong!",
-          status: "error",
-          description: `Try again later..:(`,
-          duration: 5000,
-          isClosable: true,
-        });
-      } finally {
-        stopLoading();
-      }
-    }
-  }
-
-  async function deleteEvent(id: string) {
-    if (session?.user?.email) {
-      try {
-        setLoading();
-        const response = await fetch("/api/deleteEvent", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            _id: id,
-          }),
-        });
-        if (response.status !== 200) {
-          throw Error(response.status.toString());
-        }
-
-        const body: DeleteResult = await response.json();
-        if (body.acknowledged) {
-          let temp = events;
-          const filtered = temp.filter((value) => value._id !== id);
-          setEvents(filtered);
-        } else {
-          throw Error("Not Acknowledged");
-        }
-        toast({
-          position: "bottom-left",
-          title: "Birthday deleted.",
-          status: "success",
-          description: "Birthday Deleted Successfully",
-          duration: 5000,
-          isClosable: true,
-        });
-      } catch (error) {
-        console.log(error);
-        toast({
-          position: "bottom-left",
-          title: "Oops something went wrong!",
-          status: "error",
-          description: `Try again later..:(`,
-          duration: 5000,
-          isClosable: true,
-        });
-      } finally {
-        stopLoading();
-      }
-    }
-  }
-
   async function editEvent(event: event) {
     if (session?.user?.email) {
       try {
         setLoading();
-        const response = await fetch("/api/editEvent", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            _id: event._id,
-            name: event.name,
-            color: event.color,
-            date: event.date.toISOString(),
-          }),
-        });
-
-        if (response.status !== 200) {
-          throw Error(response.status.toString());
-        }
-
-        const body: UpdateResult = await response.json();
-        if (body.acknowledged) {
-          let temp = [...events];
-          temp.map((x) => {
-            if (x._id === event._id) {
-              x.color = event.color;
-              x.date = event.date;
-              x.name = event.name;
-            }
-          });
-          setEvents(temp);
-        } else {
-          throw Error("Not Acknowledged");
-        }
+        const res = await EditEvent(event, events);
+        setEvents(res);
         toast({
           position: "bottom-left",
           title: "Birthday Edited .",
@@ -248,6 +117,80 @@ const Dashboard: NextPage = ({}) => {
         });
       } catch (error) {
         console.log(error);
+        toast({
+          position: "bottom-left",
+          title: "Oops something went wrong!",
+          status: "error",
+          description: `Try again later..:(`,
+          duration: 5000,
+          isClosable: true,
+        });
+      } finally {
+        stopLoading();
+      }
+    }
+  }
+
+  async function addEvent(event: {
+    name: string;
+    date: moment.Moment;
+    color: string;
+  }) {
+    if (session?.user?.email) {
+      setLoading();
+      AddEvent({
+        name: event.name,
+        date: event.date,
+        color: event.color,
+        email: session.user.email,
+      })
+        .then((eve) => {
+          setEvents([...events, eve]);
+          toast({
+            position: "bottom-left",
+            title: "Birthday Added. 🎉",
+            status: "success",
+            description: `We will remind you to wish ${eve.name} on ${moment(
+              eve.date
+            ).format("MMM Do")} every year`,
+            duration: 5000,
+            isClosable: true,
+          });
+        })
+        .catch((err) => {
+          console.log(err);
+          toast({
+            position: "bottom-left",
+            title: "Oops something went wrong!",
+            status: "error",
+            description: `Try again later..:(`,
+            duration: 5000,
+            isClosable: true,
+          });
+        })
+        .finally(() => {
+          stopLoading();
+        });
+    }
+  }
+
+  async function deleteEvent(id: string) {
+    if (session?.user?.email) {
+      setLoading();
+
+      try {
+        const res = await DeleteEvent(id, events);
+        setEvents(res);
+        toast({
+          position: "bottom-left",
+          title: "Birthday deleted.",
+          status: "success",
+          description: "Birthday Deleted Successfully",
+          duration: 5000,
+          isClosable: true,
+        });
+      } catch (er) {
+        console.log(er);
         toast({
           position: "bottom-left",
           title: "Oops something went wrong!",

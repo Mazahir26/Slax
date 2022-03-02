@@ -124,7 +124,10 @@ export default function SignIn() {
                             color={"white"}
                             type="submit"
                             isLoading={props.isSubmitting}
-                            disabled={props.errors.email ? true : false}
+                            disabled={
+                              (props.errors.email ? true : false) ||
+                              props.isSubmitting
+                            }
                           >
                             Send Link
                           </Button>
