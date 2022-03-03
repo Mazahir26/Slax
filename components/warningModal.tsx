@@ -35,7 +35,13 @@ export default function WarningModal({
           <Button variant={"ghost"} colorScheme="blue" mr={3} onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={() => Callback()} colorScheme={"red"}>
+          <Button
+            onClick={() => {
+              Callback();
+              onClose();
+            }}
+            colorScheme={"red"}
+          >
             {type == "DeleteAccount" ? "Delete Account" : "Sign Out"}
           </Button>
         </ModalFooter>
