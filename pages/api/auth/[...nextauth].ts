@@ -2,15 +2,18 @@ import NextAuth from "next-auth";
 import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
 import client from "../../../lib/mongodb";
 import EmailProvider from "next-auth/providers/email";
+import AuthClient from "../../../lib/OAuth";
 import nodemailer from "nodemailer";
 if (
-  !process.env.EMAIL_SERVER_HOST ||
-  !process.env.EMAIL_SERVER_PORT ||
-  !process.env.EMAIL_SERVER_USER ||
-  !process.env.EMAIL_SERVER_PASSWORD
+  !process.env.REFRESH_TOKEN ||
+  !process.env.CLIENT_ID ||
+  !process.env.CLIENT_SECRET ||
+  !process.env.REDIRECT_URI ||
+  !process.env.EMAIL_SERVER_USER
 ) {
-  throw Error("SMTP Credentials not found");
+  throw Error(" Credentials not found");
 }
+
 export default NextAuth({
   pages: {
     signIn: "/signup",
@@ -30,10 +33,24 @@ export default NextAuth({
       async sendVerificationRequest({
         identifier: email,
         url,
-        provider: { server, from },
+        provider: { from },
       }) {
         const { host } = new URL(url);
-        const transport = nodemailer.createTransport(server);
+        const access_token = await AuthClient.getAccessToken();
+        if (!access_token.token) {
+          throw new Error("Error while Sending Mail");
+        }
+        const transport = nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            type: "OAuth2",
+            user: process.env.EMAIL_SERVER_USER,
+            clientId: process.env.CLIENT_ID,
+            clientSecret: process.env.CLIENT_SECRET,
+            refreshToken: process.env.REFRESH_TOKEN,
+            accessToken: access_token.token,
+          },
+        });
         await transport.sendMail({
           to: email,
           from,
@@ -41,23 +58,6 @@ export default NextAuth({
           text: text({ url, host }),
           html: html({ url, host, email }),
         });
-      },
-      server: {
-        host: process.env.EMAIL_SERVER_HOST
-          ? process.env.EMAIL_SERVER_HOST
-          : "",
-        port: process.env.EMAIL_SERVER_PORT
-          ? parseInt(process.env.EMAIL_SERVER_PORT)
-          : 0,
-        requireTLS: true,
-        auth: {
-          pass: process.env.EMAIL_SERVER_PASSWORD
-            ? process.env.EMAIL_SERVER_PASSWORD
-            : "",
-          user: process.env.EMAIL_SERVER_USER
-            ? process.env.EMAIL_SERVER_USER
-            : "",
-        },
       },
     }),
   ],

@@ -144,7 +144,7 @@ export async function editEvent(event: event, events: event[]) {
 
 export async function getUser() {
   try {
-    const response = await fetch("/api/newuser", {
+    const response = await fetch("/api/newUser", {
       method: "GET",
     });
     if (response.status !== 200) {

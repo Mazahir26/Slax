@@ -1,8 +1,10 @@
 import nodemailer from "nodemailer";
 import type { NextApiRequest, NextApiResponse } from "next";
 import client from "../../lib/mongodb";
+import AuthClient from "../../lib/OAuth";
 import { event } from "../../components/types";
 import moment from "moment";
+import SMTPTransport from "nodemailer/lib/smtp-transport";
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -29,7 +31,7 @@ export default async function handler(
       const cursor = collection.find(
         {},
         {
-          projection: { _id: 0, date: 1, name: 1, user: 1 },
+          projection: { _id: 0, date: 1, name: 1, user: 1, isUser: 1 },
         }
       );
       const data = await cursor.toArray();
@@ -48,6 +50,10 @@ export default async function handler(
         upcoming: string[];
         today: string[];
       }[] = [];
+      let userMails: {
+        user: string;
+        userName: string;
+      }[] = [];
 
       const obj: string[] = data
         .map((item) => item.user)
@@ -64,6 +70,7 @@ export default async function handler(
               x.date.utc().utcOffset("+05:30.").format("MMM,D") ===
               todayDay.format("MMM,D")
           )
+          .filter((x) => x.isUser !== true)
           .sort((a, b) =>
             a.name.toUpperCase() > b.name.toUpperCase()
               ? 1
@@ -72,6 +79,7 @@ export default async function handler(
               : 0
           )
           .map((x) => `${x.name}.`);
+
         const Upcoming = userReminders
           .sort((a, b) =>
             moment(a.date)
@@ -84,6 +92,7 @@ export default async function handler(
               x.date.utc().utcOffset("+05:30.").date() - todayDay.date() > 0 &&
               x.date.utc().utcOffset("+05:30.").month() === todayDay.month()
           )
+          .filter((x) => x.isUser !== true)
           .map(
             (x) =>
               `${x.name}'s birthday on ${x.date
@@ -91,6 +100,13 @@ export default async function handler(
                 .utcOffset("+05:30.")
                 .format("Do [of] MMM")}.`
           );
+        const isUserBirthday = userReminders
+          .filter(
+            (x) =>
+              x.date.utc().utcOffset("+05:30.").format("MMM,D") ===
+              todayDay.format("MMM,D")
+          )
+          .filter((x) => x.isUser == true);
         if (Upcoming.length > 0 || Today.length > 0) {
           mails.push({
             user: value,
@@ -98,14 +114,41 @@ export default async function handler(
             upcoming: Upcoming,
           });
         }
+        if (isUserBirthday.length > 0) {
+          userMails.push({
+            user: value,
+            userName: isUserBirthday[0].name,
+          });
+        }
+      });
+      const access_token = await AuthClient.getAccessToken();
+      if (!access_token.token) {
+        throw new Error("Error while Sending Mail");
+      }
+      const transport = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          type: "OAuth2",
+          user: process.env.EMAIL_SERVER_USER,
+          clientId: process.env.CLIENT_ID,
+          clientSecret: process.env.CLIENT_SECRET,
+          refreshToken: process.env.REFRESH_TOKEN,
+          accessToken: access_token.token,
+        },
       });
       const promise = mails.map(async (x) => {
-        return sendMail(x.user, x.upcoming, x.today);
+        return sendMail(x.user, x.upcoming, x.today, transport);
       });
+      const userPromise = userMails.map(async (x) => {
+        return sendUserMail(x.user, x.userName, transport);
+      });
+
       await Promise.all(promise);
+      await Promise.all(userPromise);
       return res.status(200).json({
         msg: "Done",
         noOfMails: mails.length,
+        UserBirthdays: userMails.length,
       });
     } catch (e) {
       console.log(e);
@@ -123,23 +166,35 @@ export default async function handler(
   }
 }
 
-async function sendMail(user: string, Upcoming: string[], Today: string[]) {
-  if (!process.env.EMAIL_SERVER_USER || !process.env.EMAIL_SERVER_PASSWORD) {
-    throw Error("Please make sure you have updated .env.local file");
-  }
+async function sendMail(
+  user: string,
+  Upcoming: string[],
+  Today: string[],
+  transporter: nodemailer.Transporter<SMTPTransport.SentMessageInfo>
+) {
   try {
-    const transporter = nodemailer.createTransport({
-      service: "Gmail", // no need to set host or port etc.
-      auth: {
-        user: process.env.EMAIL_SERVER_USER,
-        pass: process.env.EMAIL_SERVER_PASSWORD,
-      },
-    });
     return await transporter.sendMail({
       to: user,
       from: "Slax",
       subject: "Birthday Reminder from Slax",
       html: html(Upcoming, Today, user),
+    });
+  } catch (error) {
+    console.log(error);
+    throw Error("Email not sent");
+  }
+}
+async function sendUserMail(
+  user: string,
+  userName: string,
+  transporter: nodemailer.Transporter<SMTPTransport.SentMessageInfo>
+) {
+  try {
+    return await transporter.sendMail({
+      to: user,
+      from: "Slax",
+      subject: `Happy Birthday ${userName}`,
+      html: UserHtml(userName),
     });
   } catch (error) {
     console.log(error);
@@ -403,4 +458,174 @@ ${
 </body>
 
 </html>`;
+}
+
+function UserHtml(UserName: string) {
+  return `
+<!doctype html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+
+<head>
+  <title>
+  </title>
+  <!--[if !mso]><!-->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <!--<![endif]-->
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style type="text/css">
+    #outlook a {
+      padding: 0;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
+    }
+
+    table,
+    td {
+      border-collapse: collapse;
+      mso-table-lspace: 0pt;
+      mso-table-rspace: 0pt;
+    }
+
+    img {
+      border: 0;
+      height: auto;
+      line-height: 100%;
+      outline: none;
+      text-decoration: none;
+      -ms-interpolation-mode: bicubic;
+    }
+
+    p {
+      display: block;
+      margin: 13px 0;
+    }
+  </style>
+  <!--[if mso]>
+        <noscript>
+        <xml>
+        <o:OfficeDocumentSettings>
+          <o:AllowPNG/>
+          <o:PixelsPerInch>96</o:PixelsPerInch>
+        </o:OfficeDocumentSettings>
+        </xml>
+        </noscript>
+        <![endif]-->
+  <!--[if lte mso 11]>
+        <style type="text/css">
+          .mj-outlook-group-fix { width:100% !important; }
+        </style>
+        <![endif]-->
+  <style type="text/css">
+    @media only screen and (min-width:480px) {
+      .mj-column-per-100 {
+        width: 100% !important;
+        max-width: 100%;
+      }
+    }
+  </style>
+  <style media="screen and (min-width:480px)">
+    .moz-text-html .mj-column-per-100 {
+      width: 100% !important;
+      max-width: 100%;
+    }
+  </style>
+  <style type="text/css">
+    @media only screen and (max-width:480px) {
+      table.mj-full-width-mobile {
+        width: 100% !important;
+      }
+
+      td.mj-full-width-mobile {
+        width: auto !important;
+      }
+    }
+  </style>
+</head>
+
+<body style="word-spacing:normal;">
+  <div style="">
+    <!--[if mso | IE]><table align="center" border="0" cellpadding="0" cellspacing="0" class="" style="width:600px;" width="600" ><tr><td style="line-height:0px;font-size:0px;mso-line-height-rule:exactly;"><![endif]-->
+    <div style="margin:0px auto;max-width:600px;">
+      <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="width:100%;">
+        <tbody>
+          <tr>
+            <td style="direction:ltr;font-size:0px;padding:20px 0;text-align:center;">
+              <!--[if mso | IE]><table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr><td class="" style="vertical-align:top;width:600px;" ><![endif]-->
+              <div class="mj-column-per-100 mj-outlook-group-fix" style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%;">
+                <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top;" width="100%">
+                  <tbody>
+                    <tr>
+                      <td align="center" style="font-size:0px;padding:10px 25px;word-break:break-word;">
+                        <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse;border-spacing:0px;">
+                          <tbody>
+                            <tr>
+                              <td style="width:100px;">
+                                <img height="auto" src="https://slax.vercel.app/logo.png" style="border:0;display:block;outline:none;text-decoration:none;height:auto;width:100%;font-size:13px;" width="100" />
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td align="center" style="font-size:0px;padding:10px 25px;padding-top:80px;word-break:break-word;">
+                        <div style="font-family:helvetica;font-size:35px;line-height:1;text-align:center;color:#000000;">Happy Birthday ${UserName}</div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td align="center" style="font-size:0px;padding:10px 25px;padding-top:40px;word-break:break-word;">
+                        <div style="font-family:sans-serif,Arial,Georgia,Helvetica;font-size:15px;line-height:20px;text-align:center;color:#000000;">Hold Tight!!! Your life is about to blast into the stratosphere. 10, 9, 8, 7, 6, 5, 4, 3. 2 1 HAPPY BIRTHDAY!! P.S. don't forget your seatbelt.</div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <!--[if mso | IE]></td></tr></table><![endif]-->
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!--[if mso | IE]></td></tr></table><table align="center" border="0" cellpadding="0" cellspacing="0" class="" style="width:600px;" width="600" ><tr><td style="line-height:0px;font-size:0px;mso-line-height-rule:exactly;"><![endif]-->
+    <div style="margin:0px auto;max-width:600px;">
+      <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="width:100%;">
+        <tbody>
+          <tr>
+            <td style="direction:ltr;font-size:0px;padding:20px 0;text-align:center;">
+              <!--[if mso | IE]><table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr><td class="" style="vertical-align:top;width:600px;" ><![endif]-->
+              <div class="mj-column-per-100 mj-outlook-group-fix" style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%;">
+                <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top;" width="100%">
+                  <tbody>
+                    <tr>
+                      <td align="center" style="font-size:0px;padding:10px 25px;padding-top:30px;word-break:break-word;">
+                        <div style="font-family:helvetica;font-size:15px;line-height:1;text-align:center;color:#000000;">This is an automated email, if you don't want to hear from us you may login to <a href="www.slax.studio" style="text-decoration:none;color:#2a88f3">Slax</a> and delete your account. Thank You</div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td align="center" style="font-size:0px;padding:10px 25px;padding-top:10px;word-break:break-word;">
+                        <div style="font-family:helvetica;font-size:15px;line-height:1;text-align:center;color:#000000;">©2022 Slax. All rights reserved</div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <!--[if mso | IE]></td></tr></table><![endif]-->
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!--[if mso | IE]></td></tr></table><![endif]-->
+  </div>
+</body>
+
+</html>
+
+`;
 }
