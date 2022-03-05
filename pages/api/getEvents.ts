@@ -1,4 +1,5 @@
 import moment from "moment";
+import { WithId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getSession } from "next-auth/react";
 import { eventData } from "../../components/types";
@@ -33,15 +34,31 @@ export default async function handler(
           user: session.user.email,
         },
         {
-          projection: { _id: 1, date: 1, name: 1, user: 1, color: 1 },
+          projection: {
+            _id: 1,
+            date: 1,
+            name: 1,
+            user: 1,
+            color: 1,
+            isUser: 1,
+          },
         }
       );
-      const result = await cursor.toArray();
+      let result = await cursor.toArray();
       result.map((x) => {
         x.date = moment(x.date).toISOString();
         x._id = x._id.toString();
       });
-      return res.status(200).json(result);
+      const isNewUser = result.filter((ele) => ele.isUser === true).length > 0;
+      result = result.filter((ele) => {
+        if (!(ele.isUser === true)) {
+          return ele;
+        }
+      });
+      return res.status(200).json({
+        result,
+        isNewUser,
+      });
     } catch (e) {
       console.log(e);
       return res.status(500).json({

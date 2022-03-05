@@ -6,10 +6,21 @@ import {
   Text,
   useColorModeValue,
 } from "@chakra-ui/react";
+import { useSession } from "next-auth/react";
 import Head from "next/head";
+import { useRouter } from "next/router";
+import { useEffect } from "react";
 import Footer from "../components/layout/footer";
 
 export default function Verification() {
+  const session = useSession();
+  const router = useRouter();
+  useEffect(() => {
+    if (session.status === "authenticated") {
+      router.replace("/dashboard");
+    }
+  }, [session]);
+
   return (
     <>
       <Head>

@@ -17,6 +17,7 @@ export default NextAuth({
     verifyRequest: "/verification",
     signOut: "/signout",
     error: "/error",
+    newUser: "/onboarding",
   },
   adapter: MongoDBAdapter(client),
   session: {
