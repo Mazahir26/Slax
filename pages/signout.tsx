@@ -17,7 +17,7 @@ import WarningModal from "../components/warningModal";
 export default function Verification() {
   const session = useSession();
   const { isOpen, onOpen, onClose } = useDisclosure();
-
+  const color = useColorModeValue("white", "gray.700");
   useEffect(() => {
     if (session.status == "authenticated") {
       onOpen();
@@ -57,12 +57,7 @@ export default function Verification() {
               {`Bye, Visit again 👋`}
             </Text>
           </Stack>
-          <Box
-            rounded={"lg"}
-            bg={useColorModeValue("white", "gray.700")}
-            boxShadow={"lg"}
-            p={4}
-          >
+          <Box rounded={"lg"} bg={color} boxShadow={"lg"} p={4}>
             <Text fontSize={"sm"} textAlign="center">
               Thank you, Any feedback or suggestions will be appreciated.
             </Text>

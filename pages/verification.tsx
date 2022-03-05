@@ -19,7 +19,7 @@ export default function Verification() {
     if (session.status === "authenticated") {
       router.replace("/dashboard");
     }
-  }, [session]);
+  }, [session, router]);
 
   return (
     <>

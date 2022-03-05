@@ -61,7 +61,7 @@ const Dashboard: NextPage = ({}) => {
         })
         .finally(() => setIsConnected(true));
     }
-  }, [status]);
+  }, [status, router]);
 
   if (status === "unauthenticated") {
     return (

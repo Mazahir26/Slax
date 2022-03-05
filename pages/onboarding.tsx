@@ -20,16 +20,17 @@ import moment from "moment";
 import { useSession } from "next-auth/react";
 import Head from "next/head";
 import { useRouter } from "next/router";
+import { NextPage } from "next/types";
 import { useEffect, useState } from "react";
 import Footer from "../components/layout/footer";
 import { addEvent, getUser } from "../lib/helperFunctions";
 
-export default function newUser() {
+const OnBoarding: NextPage = () => {
   const { status, data: session } = useSession();
   const [isNew, setIsNew] = useState<boolean | undefined>();
   const [loading, setLoading] = useState<boolean>(false);
   const router = useRouter();
-
+  const color = useColorModeValue("white", "gray.700");
   const toast = useToast();
 
   useEffect(() => {
@@ -38,7 +39,7 @@ export default function newUser() {
     } else if (status === "authenticated") {
       GetUser();
     }
-  }, [status]);
+  }, [status, router]);
 
   if (status === "loading" || isNew === undefined) {
     return (
@@ -156,12 +157,7 @@ export default function newUser() {
               {`Add your birthday, Your birthday is important to us! 😁`}
             </Text>
           </Stack>
-          <Box
-            rounded={"lg"}
-            bg={useColorModeValue("white", "gray.700")}
-            boxShadow={"lg"}
-            p={6}
-          >
+          <Box rounded={"lg"} bg={color} boxShadow={"lg"} p={6}>
             <Formik
               initialValues={{
                 name: "",
@@ -266,4 +262,6 @@ export default function newUser() {
       <Footer />
     </>
   );
-}
+};
+
+export default OnBoarding;
