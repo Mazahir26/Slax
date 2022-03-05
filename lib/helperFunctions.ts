@@ -14,8 +14,11 @@ export async function getEvents({ setEvents }: { setEvents: Function }) {
       throw Error(response.status.toString());
     }
 
-    const body: event[] = await response.json();
-    const temp = body.map((item: event) => {
+    const body: {
+      result: event[];
+      isNewUser: boolean;
+    } = await response.json();
+    const temp = body.result.map((item: event) => {
       return {
         name: item.name,
         date: moment(item.date),
@@ -35,6 +38,7 @@ export async function addEvent(event: {
   date: moment.Moment;
   color: string;
   email: string;
+  isUser?: boolean;
 }) {
   try {
     const response = await fetch("/api/createEvent", {
@@ -46,6 +50,7 @@ export async function addEvent(event: {
         name: event.name,
         date: event.date.toISOString(),
         color: event.color,
+        isUser: event.isUser,
       }),
     });
     if (response.status !== 201) {
@@ -132,6 +137,25 @@ export async function editEvent(event: event, events: event[]) {
     } else {
       throw Error("Not Acknowledged");
     }
+  } catch (error: any) {
+    throw Error(error);
+  }
+}
+
+export async function getUser() {
+  try {
+    const response = await fetch("/api/newuser", {
+      method: "GET",
+    });
+    if (response.status !== 200) {
+      throw Error(response.status.toString());
+    }
+    const data: {
+      email: string;
+      isNew: boolean;
+    } = await response.json();
+
+    return data;
   } catch (error: any) {
     throw Error(error);
   }

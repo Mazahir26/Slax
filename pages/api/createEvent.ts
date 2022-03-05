@@ -45,6 +45,7 @@ export default async function handler(
         name: req.body.name,
         user: session?.user?.email,
         color: req.body.color,
+        isUser: req.body.isUser,
       });
       return res.status(201).json(result);
     } catch (e) {

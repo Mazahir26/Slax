@@ -8,7 +8,6 @@ import {
   Icon,
   useColorModeValue,
   createIcon,
-  Spacer,
 } from "@chakra-ui/react";
 import type { GetServerSideProps, NextPage } from "next";
 import { getSession, signIn, useSession } from "next-auth/react";
@@ -17,8 +16,8 @@ import Footer from "../components/layout/footer";
 import "@fontsource/caveat/400.css";
 import Head from "next/head";
 
-const Home: NextPage = (props) => {
-  const { data: session, status } = useSession();
+const Home: NextPage = () => {
+  const { status } = useSession();
   const router = useRouter();
   const iconColor = useColorModeValue("gray.800", "gray.300");
   return (
