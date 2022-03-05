@@ -51,6 +51,7 @@ export default NextAuth({
             accessToken: access_token.token,
             timeout: 20,
           },
+          connectionTimeout: 30000,
         });
         await transport.sendMail({
           to: email,
