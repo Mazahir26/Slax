@@ -49,6 +49,7 @@ export default NextAuth({
             clientSecret: process.env.CLIENT_SECRET,
             refreshToken: process.env.REFRESH_TOKEN,
             accessToken: access_token.token,
+            timeout: 20,
           },
         });
         await transport.sendMail({
