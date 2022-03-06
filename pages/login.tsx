@@ -22,7 +22,7 @@ import { useRouter } from "next/router";
 import { GetServerSideProps } from "next/types";
 import Footer from "../components/layout/footer";
 
-export default function SignIn() {
+export default function Login() {
   const toast = useToast();
   const router = useRouter();
   const { status } = useSession();

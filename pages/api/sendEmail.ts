@@ -135,6 +135,9 @@ export default async function handler(
           refreshToken: process.env.REFRESH_TOKEN,
           accessToken: access_token.token,
         },
+        tls: {
+          rejectUnauthorized: false,
+        },
       });
       const promise = mails.map(async (x) => {
         return sendMail(x.user, x.upcoming, x.today, transport);
