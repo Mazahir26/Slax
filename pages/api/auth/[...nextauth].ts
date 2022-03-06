@@ -35,26 +35,26 @@ export default NextAuth({
         url,
         provider: { from },
       }) {
-        const { host } = new URL(url);
-        const access_token = await AuthClient.getAccessToken();
-        if (!access_token.token) {
-          throw new Error("Error while Sending Mail");
-        }
-        const transport = nodemailer.createTransport({
-          service: "gmail",
-          auth: {
-            type: "OAuth2",
-            user: process.env.EMAIL_SERVER_USER,
-            clientId: process.env.CLIENT_ID,
-            clientSecret: process.env.CLIENT_SECRET,
-            refreshToken: process.env.REFRESH_TOKEN,
-            accessToken: access_token.token,
-          },
-          tls: {
-            rejectUnauthorized: false,
-          },
-        });
         try {
+          const { host } = new URL(url);
+          const access_token = await AuthClient.getAccessToken();
+          if (!access_token.token) {
+            throw new Error("Error while Sending Mail");
+          }
+          const transport = nodemailer.createTransport({
+            service: "gmail",
+            auth: {
+              type: "OAuth2",
+              user: process.env.EMAIL_SERVER_USER,
+              clientId: process.env.CLIENT_ID,
+              clientSecret: process.env.CLIENT_SECRET,
+              refreshToken: process.env.REFRESH_TOKEN,
+              accessToken: access_token.token,
+            },
+            tls: {
+              rejectUnauthorized: false,
+            },
+          });
           await transport.sendMail({
             to: email,
             from,
