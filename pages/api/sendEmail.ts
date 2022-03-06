@@ -1,7 +1,6 @@
 import nodemailer from "nodemailer";
 import type { NextApiRequest, NextApiResponse } from "next";
 import client from "../../lib/mongodb";
-import AuthClient from "../../lib/OAuth";
 import { event } from "../../components/types";
 import moment from "moment";
 import SMTPTransport from "nodemailer/lib/smtp-transport";
@@ -121,10 +120,7 @@ export default async function handler(
           });
         }
       });
-      const access_token = await AuthClient.getAccessToken();
-      if (!access_token.token) {
-        throw new Error("Error while Sending Mail");
-      }
+
       const transport = nodemailer.createTransport({
         service: "gmail",
         auth: {
@@ -133,7 +129,6 @@ export default async function handler(
           clientId: process.env.CLIENT_ID,
           clientSecret: process.env.CLIENT_SECRET,
           refreshToken: process.env.REFRESH_TOKEN,
-          accessToken: access_token.token,
         },
         tls: {
           rejectUnauthorized: false,

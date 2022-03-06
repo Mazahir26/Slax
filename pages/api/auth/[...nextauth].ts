@@ -2,7 +2,6 @@ import NextAuth from "next-auth";
 import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
 import client from "../../../lib/mongodb";
 import EmailProvider from "next-auth/providers/email";
-import AuthClient from "../../../lib/OAuth";
 import nodemailer from "nodemailer";
 if (
   !process.env.REFRESH_TOKEN ||
@@ -37,17 +36,7 @@ export default NextAuth({
       }) {
         try {
           const { host } = new URL(url);
-          const access_token = await AuthClient.getAccessToken();
-          if (!access_token.token) {
-            throw new Error("Error while Sending Mail");
-          }
-          console.log({
-            user: process.env.EMAIL_SERVER_USER,
-            clientId: process.env.CLIENT_ID,
-            clientSecret: process.env.CLIENT_SECRET,
-            refreshToken: process.env.REFRESH_TOKEN,
-            accessToken: access_token.token,
-          });
+
           const transport = nodemailer.createTransport({
             service: "gmail",
             auth: {
@@ -56,7 +45,6 @@ export default NextAuth({
               clientId: process.env.CLIENT_ID,
               clientSecret: process.env.CLIENT_SECRET,
               refreshToken: process.env.REFRESH_TOKEN,
-              accessToken: access_token.token,
             },
             tls: {
               rejectUnauthorized: false,
