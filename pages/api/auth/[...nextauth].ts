@@ -54,14 +54,18 @@ export default NextAuth({
             rejectUnauthorized: false,
           },
         });
-
-        await transport.sendMail({
-          to: email,
-          from,
-          subject: `Sign in to ${host}`,
-          text: text({ url, host }),
-          html: html({ url, host, email }),
-        });
+        try {
+          await transport.sendMail({
+            to: email,
+            from,
+            subject: `Sign in to ${host}`,
+            text: text({ url, host }),
+            html: html({ url, host, email }),
+          });
+        } catch (err: any) {
+          console.log(err);
+          throw new Error(err);
+        }
       },
     }),
   ],
