@@ -121,24 +121,18 @@ export default async function handler(
         }
       });
 
-      const transport = nodemailer.createTransport({
-        service: "gmail",
+      const transporter = nodemailer.createTransport({
+        service: "Gmail",
         auth: {
-          type: "OAuth2",
           user: process.env.EMAIL_SERVER_USER,
-          clientId: process.env.CLIENT_ID,
-          clientSecret: process.env.CLIENT_SECRET,
-          refreshToken: process.env.REFRESH_TOKEN,
-        },
-        tls: {
-          rejectUnauthorized: false,
+          pass: process.env.EMAIL_SERVER_PASSWORD,
         },
       });
       const promise = mails.map(async (x) => {
-        return sendMail(x.user, x.upcoming, x.today, transport);
+        return sendMail(x.user, x.upcoming, x.today, transporter);
       });
       const userPromise = userMails.map(async (x) => {
-        return sendUserMail(x.user, x.userName, transport);
+        return sendUserMail(x.user, x.userName, transporter);
       });
 
       await Promise.all(promise);

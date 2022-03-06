@@ -4,11 +4,10 @@ import client from "../../../lib/mongodb";
 import EmailProvider from "next-auth/providers/email";
 import nodemailer from "nodemailer";
 if (
-  !process.env.REFRESH_TOKEN ||
-  !process.env.CLIENT_ID ||
-  !process.env.CLIENT_SECRET ||
-  !process.env.REDIRECT_URI ||
-  !process.env.EMAIL_SERVER_USER
+  !process.env.EMAIL_SERVER_HOST ||
+  !process.env.EMAIL_SERVER_PORT ||
+  !process.env.EMAIL_SERVER_USER ||
+  !process.env.EMAIL_SERVER_PASSWORD
 ) {
   throw Error(" Credentials not found");
 }
@@ -32,24 +31,11 @@ export default NextAuth({
       async sendVerificationRequest({
         identifier: email,
         url,
-        provider: { from },
+        provider: { server, from },
       }) {
         try {
           const { host } = new URL(url);
-
-          const transport = nodemailer.createTransport({
-            service: "gmail",
-            auth: {
-              type: "OAuth2",
-              user: process.env.EMAIL_SERVER_USER,
-              clientId: process.env.CLIENT_ID,
-              clientSecret: process.env.CLIENT_SECRET,
-              refreshToken: process.env.REFRESH_TOKEN,
-            },
-            tls: {
-              rejectUnauthorized: false,
-            },
-          });
+          const transport = nodemailer.createTransport(server);
           await transport.sendMail({
             to: email,
             from,
@@ -61,6 +47,23 @@ export default NextAuth({
           console.log(err);
           throw new Error(err);
         }
+      },
+      server: {
+        host: process.env.EMAIL_SERVER_HOST
+          ? process.env.EMAIL_SERVER_HOST
+          : "",
+        port: process.env.EMAIL_SERVER_PORT
+          ? parseInt(process.env.EMAIL_SERVER_PORT)
+          : 0,
+        requireTLS: true,
+        auth: {
+          pass: process.env.EMAIL_SERVER_PASSWORD
+            ? process.env.EMAIL_SERVER_PASSWORD
+            : "",
+          user: process.env.EMAIL_SERVER_USER
+            ? process.env.EMAIL_SERVER_USER
+            : "",
+        },
       },
     }),
   ],
