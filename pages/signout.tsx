@@ -54,7 +54,7 @@ export default function Verification() {
               Successfully Signed Out.
             </Heading>
             <Text fontSize={"lg"} color={"gray.600"}>
-              {`Bye, Visit again 👋`}
+              Bye, Visit again 👋
             </Text>
           </Stack>
           <Box rounded={"lg"} bg={color} boxShadow={"lg"} p={4}>

@@ -154,7 +154,7 @@ const OnBoarding: NextPage = () => {
               Welcome to Slax
             </Heading>
             <Text fontSize={"lg"} color={"gray.600"}>
-              {`Add your birthday, Your birthday is important to us! 😁`}
+              Add your birthday, Your birthday is important to us! 😁
             </Text>
           </Stack>
           <Box rounded={"lg"} bg={color} boxShadow={"lg"} p={6}>

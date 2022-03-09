@@ -48,10 +48,9 @@ const Home: NextPage = () => {
             </Text>
           </Heading>
           <Text color={"gray.500"}>
-            {`
-            You ask how? It's very easy create an account, add birthdays and forget about it.
-            We will make sure that you remember their birthday, So you can
-            focus on planing an surprise for them 😉.`}
+            You ask how? It&apos;s very easy create an account, add birthdays
+            and forget about it. We will make sure that you remember their
+            birthday, So you can focus on planing an surprise for them 😉.
           </Text>
           <Stack
             direction={"column"}
