@@ -6,7 +6,7 @@ export default function Sitemap() {
 
 export const getServerSideProps = ({ res, req }: GetServerSidePropsContext) => {
   const baseUrl =
-    process.env.NODE_ENV == "development"
+    process.env.NODE_ENV === "development"
       ? `http://${req.headers.host}`
       : `https://${req.headers.host}`;
 
