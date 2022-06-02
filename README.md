@@ -2,6 +2,9 @@
 
 It's an open source next js project, which helps people remember birthdays via email.
 
+# Note:
+### Currently not functional and not maintained.
+
 ## Table of Contents
 
 - [About](#about)
