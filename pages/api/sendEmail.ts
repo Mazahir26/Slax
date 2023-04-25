@@ -596,7 +596,7 @@ function UserHtml(UserName: string) {
                   <tbody>
                     <tr>
                       <td align="center" style="font-size:0px;padding:10px 25px;padding-top:30px;word-break:break-word;">
-                        <div style="font-family:helvetica;font-size:15px;line-height:1;text-align:center;color:#000000;">This is an automated email, if you don't want to hear from us you may login to <a href="www.slax.studio" style="text-decoration:none;color:#2a88f3">Slax</a> and delete your account. Thank You</div>
+                        <div style="font-family:helvetica;font-size:15px;line-height:1;text-align:center;color:#000000;">This is an automated email, if you don't want to hear from us you may login to <a href="www.slax.vercel.app" style="text-decoration:none;color:#2a88f3">Slax</a> and delete your account. Thank You</div>
                       </td>
                     </tr>
                     <tr>
