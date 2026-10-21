@@ -18,8 +18,42 @@ function isAuthenticated(
   session: Session | null
 ): session is AuthenticatedSession {
   return (
-    typeof session?.user?.email === "string" && session.user.email.length > 0
+    typeof session?.user?.email === "string" &&
+    session.user.email.length > 0 &&
+    typeof session.user.id === "string" &&
+    session.user.id.length > 0
   );
+}
+
+/**
+ * Validate the NextAuth JWT for a route that only needs a stable identity.
+ *
+ * Unlike `requireSession`, this deliberately does not check `auth.users`, so
+ * idempotent cleanup can be retried after the account was disabled or deleted.
+ * A non-empty `uid` is still mandatory: it is what the cleanup deletes by, and
+ * legacy tokens without one must re-authenticate once.
+ */
+export async function requireDeletionSession(
+  req: NextApiRequest,
+  res: NextApiResponse
+): Promise<AuthenticatedSession | null> {
+  let session: Session | null;
+  try {
+    session = await getServerSession(req, res, authOptions);
+  } catch (error: unknown) {
+    console.error("Could not resolve the authentication session.", error);
+    if (!res.headersSent) {
+      sendError(res, 500, "Could not verify your account. Please try again.");
+    }
+    return null;
+  }
+
+  if (!isAuthenticated(session)) {
+    sendError(res, 401, "You need to be authenticated");
+    return null;
+  }
+
+  return session;
 }
 
 /** Send a JSON error body. `msg`/`code` are always present; `errors` is optional. */
@@ -99,18 +133,13 @@ export async function requireSession(
     return null;
   }
 
-  // JWTs created before `uid` was added still need a usable id. The database
-  // document id is the same value the adapter would put in the token.
-  const id =
-    typeof session.user.id === "string" && session.user.id.length > 0
-      ? session.user.id
-      : user._id.toHexString();
+  // The JWT must belong to the account that currently owns this email. This
+  // rejects a stale token after the address is deleted and re-registered: the
+  // new account gets a different `_id`, so the token's `uid` no longer matches.
+  if (session.user.id !== user._id.toHexString()) {
+    sendError(res, 401, "You need to be authenticated");
+    return null;
+  }
 
-  return {
-    ...session,
-    user: {
-      ...session.user,
-      id,
-    },
-  };
+  return session;
 }

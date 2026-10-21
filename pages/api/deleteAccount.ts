@@ -1,7 +1,7 @@
 import { ObjectId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 import type { rawEvent } from "../../components/types";
-import { methodNotAllowed, requireSession, sendError } from "../../lib/api";
+import { methodNotAllowed, requireDeletionSession, sendError } from "../../lib/api";
 import { getDb } from "../../lib/mongodb";
 
 type AuthUser = {
@@ -23,7 +23,9 @@ export default async function handler(
     return methodNotAllowed(res, req.method, ["POST"]);
   }
 
-  const session = await requireSession(req, res);
+  // Use the JWT-only helper: a retry after a partial cleanup must still work
+  // when the user is already disabled or its document is already gone.
+  const session = await requireDeletionSession(req, res);
   if (!session) return;
 
   const email = session.user.email;
@@ -40,7 +42,9 @@ export default async function handler(
 
     // Revoke outstanding tokens before removing the data. The account is then
     // rejected by `requireSession` during the (very small) window before the
-    // user document is deleted.
+    // user document is deleted. Every step below is an idempotent `deleteMany`
+    // (or an `updateOne` that is safe to repeat), so a retry can finish a
+    // partially completed cleanup.
     const user = await users.findOne({ email }, { projection: { _id: 1 } });
     if (user) {
       assertAcknowledged(

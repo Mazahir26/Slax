@@ -77,12 +77,16 @@ export default async function handler(
 
   try {
     const reminders = (await getDb("Data")).collection<rawEvent>("reminders");
-    await ensureSelfBirthdayIndex(reminders);
 
     // Onboarding retries must be safe: return the existing self-birthday before
     // considering the current onboarding flag. This is true regardless of
     // whether `isNew` was already flipped to false by another request.
     if (wantsSelfBirthday) {
+      // Build the unique index only for self-birthday creation. Ordinary event
+      // creation must not fail because pre-existing duplicate birthdays block
+      // the index build (cleaning those up is a deployment prerequisite).
+      await ensureSelfBirthdayIndex(reminders);
+
       const existing = await reminders.findOne(
         { user: email, isUser: true },
         { projection: { _id: 1 } }

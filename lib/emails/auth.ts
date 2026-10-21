@@ -1,3 +1,17 @@
+/**
+ * Escape text before interpolating it into the HTML body or an attribute.
+ * Email addresses and hosts are attacker-influenced, so a stored quote or
+ * `<script>` must render as text rather than become markup.
+ */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 /** Email HTML body for the NextAuth sign-in (magic link) email. */
 export function signInEmailHtml({
   url,
@@ -8,8 +22,11 @@ export function signInEmailHtml({
   host: string;
   email: string;
 }): string {
-  const escapedEmail = `${email.replace(/\./g, "&#8203;.")}`;
-  const escapedHost = `${host.replace(/\./g, "&#8203;.")}`;
+  // Escape first, then insert zero-width spaces before dots for display. The
+  // entities produced by escaping do not contain dots, so this order is safe.
+  const escapedEmail = escapeHtml(email).replace(/\./g, "&#8203;.");
+  const escapedHost = escapeHtml(host).replace(/\./g, "&#8203;.");
+  const escapedUrl = escapeHtml(url);
 
   return `<!doctype html>
   <html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
@@ -143,7 +160,7 @@ export function signInEmailHtml({
                             <tr>
                               <td align="center" bgcolor="#4c9bf5" role="presentation" style="border:none;border-radius:3px;cursor:auto;mso-padding-alt:10px 25px;background:#4c9bf5;" valign="middle">
                                 <p style="display:inline-block;background:#4c9bf5;color:#ffffff;font-family:Helvetica, Helvetica, Arial, sans-serif;font-size:13px;font-weight:normal;line-height:120%;margin:0;text-decoration:none;text-transform:none;padding:10px 25px;mso-padding-alt:0px;border-radius:3px;"> 
-                                <a  href="${url}" target="_blank" style="text-decoration: none; display: inline-block;"> 
+                                <a  href="${escapedUrl}" target="_blank" style="text-decoration: none; display: inline-block;"> 
                                 <span style="color:#eeeeee">Sign in</span>
                                 </p>
                               </td>
