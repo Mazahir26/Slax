@@ -30,7 +30,7 @@ export function signInEmailHtml({
 
   return `<!doctype html>
   <html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
-  
+
   <head>
     <title>
     </title>
@@ -43,21 +43,21 @@ export function signInEmailHtml({
       #outlook a {
         padding: 0;
       }
-  
+
       body {
         margin: 0;
         padding: 0;
         -webkit-text-size-adjust: 100%;
         -ms-text-size-adjust: 100%;
       }
-  
+
       table,
       td {
         border-collapse: collapse;
         mso-table-lspace: 0pt;
         mso-table-rspace: 0pt;
       }
-  
+
       img {
         border: 0;
         height: auto;
@@ -66,7 +66,7 @@ export function signInEmailHtml({
         text-decoration: none;
         -ms-interpolation-mode: bicubic;
       }
-  
+
       p {
         display: block;
         margin: 13px 0;
@@ -106,14 +106,14 @@ export function signInEmailHtml({
         table.mj-full-width-mobile {
           width: 100% !important;
         }
-  
+
         td.mj-full-width-mobile {
           width: auto !important;
         }
       }
     </style>
   </head>
-  
+
   <body style="word-spacing:normal;">
     <div style="">
       <!--[if mso | IE]><table align="center" border="0" cellpadding="0" cellspacing="0" class="" style="width:600px;" width="600" ><tr><td style="line-height:0px;font-size:0px;mso-line-height-rule:exactly;"><![endif]-->
@@ -159,8 +159,8 @@ export function signInEmailHtml({
                           <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:separate;line-height:100%;">
                             <tr>
                               <td align="center" bgcolor="#4c9bf5" role="presentation" style="border:none;border-radius:3px;cursor:auto;mso-padding-alt:10px 25px;background:#4c9bf5;" valign="middle">
-                                <p style="display:inline-block;background:#4c9bf5;color:#ffffff;font-family:Helvetica, Helvetica, Arial, sans-serif;font-size:13px;font-weight:normal;line-height:120%;margin:0;text-decoration:none;text-transform:none;padding:10px 25px;mso-padding-alt:0px;border-radius:3px;"> 
-                                <a  href="${escapedUrl}" target="_blank" style="text-decoration: none; display: inline-block;"> 
+                                <p style="display:inline-block;background:#4c9bf5;color:#ffffff;font-family:Helvetica, Helvetica, Arial, sans-serif;font-size:13px;font-weight:normal;line-height:120%;margin:0;text-decoration:none;text-transform:none;padding:10px 25px;mso-padding-alt:0px;border-radius:3px;">
+                                <a  href="${escapedUrl}" target="_blank" style="text-decoration: none; display: inline-block;">
                                 <span style="color:#eeeeee">Sign in</span>
                                 </p>
                               </td>
@@ -233,7 +233,7 @@ export function signInEmailHtml({
       <!--[if mso | IE]></td></tr></table><![endif]-->
     </div>
   </body>
-  
+
   </html>`;
 }
 

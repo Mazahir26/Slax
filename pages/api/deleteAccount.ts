@@ -46,6 +46,16 @@ export default async function handler(
     // (or an `updateOne` that is safe to repeat), so a retry can finish a
     // partially completed cleanup.
     const user = await users.findOne({ email }, { projection: { _id: 1 } });
+
+    // `requireDeletionSession` only validates the JWT so a retry still works
+    // after the account was disabled or deleted. That means the token could be
+    // stale: if this email was deleted and then registered again, the JWT's
+    // `uid` belongs to the old account. Refuse before touching anything, so a
+    // stale token can never disable or delete its replacement.
+    if (user && user._id.toHexString() !== session.user.id) {
+      return sendError(res, 401, "You need to be authenticated");
+    }
+
     if (user) {
       assertAcknowledged(
         await users.updateOne(
@@ -75,8 +85,12 @@ export default async function handler(
     );
 
     // Remove the user document last: while it exists, `requireSession` still
-    // rejects the account because `isDisabled` is set.
-    const result = await users.deleteMany({ email });
+    // rejects the account because `isDisabled` is set. When the document is
+    // already gone this is a retry after a completed deletion, so skip the
+    // delete and return the same result shape.
+    const result = user
+      ? await users.deleteOne({ _id: user._id })
+      : { acknowledged: true, deletedCount: 0 };
     assertAcknowledged(result);
 
     return res.status(201).json(result);
