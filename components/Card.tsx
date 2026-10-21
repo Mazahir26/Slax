@@ -67,7 +67,7 @@ export default function Card({
         type="button"
         onClick={() => onClick(id)}
         style={accentStyle}
-        className="group relative flex min-h-16 w-full min-w-0 flex-1 cursor-pointer items-center gap-3 overflow-hidden rounded-2xl border border-black/5 p-3 text-left shadow-sm transition-all duration-200 outline-none hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-0 active:scale-[0.99] motion-reduce:transform-none motion-reduce:translate-none motion-reduce:scale-none sm:p-4 dark:border-border dark:bg-card"
+        className="group relative flex min-h-16 w-full min-w-0 flex-1 cursor-pointer items-center gap-3 overflow-hidden rounded-2xl border border-black/5 p-3 text-left shadow-sm transition-all duration-200 outline-none hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-0 active:scale-[0.99] motion-reduce:hover:translate-none! motion-reduce:active:scale-none! sm:p-4 dark:border-border dark:bg-card"
       >
         <span
           aria-hidden="true"
@@ -89,7 +89,7 @@ export default function Card({
 
         <ChevronRight
           aria-hidden="true"
-          className="relative z-10 size-4 shrink-0 text-[color:var(--card-ink)] opacity-60 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transform-none motion-reduce:translate-none dark:text-muted-foreground"
+          className="relative z-10 size-4 shrink-0 text-[color:var(--card-ink)] opacity-60 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:group-hover:translate-none! dark:text-muted-foreground"
         />
       </button>
     </div>

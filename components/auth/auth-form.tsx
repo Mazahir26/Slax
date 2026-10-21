@@ -147,7 +147,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="h-11 w-full rounded-xl bg-brand text-base font-semibold text-brand-foreground shadow-lg shadow-brand/20 transition-all duration-200 hover:bg-brand/90 focus-visible:ring-brand/40 active:scale-[0.99] motion-reduce:transform-none motion-reduce:scale-none"
+              className="h-11 w-full rounded-xl bg-brand text-base font-semibold text-brand-foreground shadow-lg shadow-brand/20 transition-all duration-200 hover:bg-brand/90 focus-visible:ring-brand/40 active:scale-[0.99] motion-reduce:active:scale-none!"
             >
               {isSubmitting ? (
                 <>

@@ -83,7 +83,7 @@ export function AuthShell({ title, description, children }: AuthShellProps) {
                 href="/"
                 className="group relative inline-flex w-fit items-center gap-3 rounded-2xl focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-white/60"
               >
-                <span className="grid size-11 place-items-center rounded-2xl bg-white/15 ring-1 ring-white/25 backdrop-blur-sm transition-transform duration-200 group-hover:scale-105 motion-reduce:transform-none motion-reduce:scale-none">
+                <span className="grid size-11 place-items-center rounded-2xl bg-white/15 ring-1 ring-white/25 backdrop-blur-sm transition-transform duration-200 group-hover:scale-105 motion-reduce:group-hover:scale-none!">
                   <CalendarHeart className="size-6" aria-hidden="true" />
                 </span>
                 <span className="text-2xl font-bold tracking-tight">Slax</span>

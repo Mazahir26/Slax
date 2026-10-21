@@ -69,7 +69,7 @@ export default function Footer() {
               rel="noopener noreferrer"
               aria-label={label}
               title={label}
-              className="inline-flex size-11 items-center justify-center rounded-full text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:bg-accent hover:text-brand motion-reduce:transform-none motion-reduce:translate-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+              className="inline-flex size-11 items-center justify-center rounded-full text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:bg-accent hover:text-brand motion-reduce:hover:translate-none! focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
             >
               <Icon className="size-4" />
             </a>

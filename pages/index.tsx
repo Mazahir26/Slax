@@ -78,7 +78,7 @@ const Home: NextPage = () => {
               {status === "authenticated" ? (
                 <Button
                   size="lg"
-                  className="bg-brand text-brand-foreground hover:bg-brand/90 h-12 rounded-full px-7 text-base shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md motion-reduce:transform-none motion-reduce:translate-none"
+                  className="bg-brand text-brand-foreground hover:bg-brand/90 h-12 rounded-full px-7 text-base shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md motion-reduce:hover:translate-none!"
                   onClick={() => router.push("/dashboard")}
                 >
                   Go to Dashboard
@@ -89,7 +89,7 @@ const Home: NextPage = () => {
                   <div className="flex items-center gap-1.5">
                     <Button
                       size="lg"
-                      className="bg-brand text-brand-foreground hover:bg-brand/90 h-12 rounded-full px-7 text-base shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md motion-reduce:transform-none motion-reduce:translate-none"
+                      className="bg-brand text-brand-foreground hover:bg-brand/90 h-12 rounded-full px-7 text-base shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md motion-reduce:hover:translate-none!"
                       onClick={() => signIn()}
                     >
                       Create an account
@@ -142,9 +142,9 @@ const Home: NextPage = () => {
               {features.map(({ title, description, Icon }) => (
                 <li
                   key={title}
-                  className="group flex items-start gap-3 rounded-2xl border border-border/70 bg-card/70 p-5 shadow-sm backdrop-blur transition-all duration-200 hover:-translate-y-1 hover:shadow-md motion-reduce:transform-none motion-reduce:translate-none"
+                  className="group flex items-start gap-3 rounded-2xl border border-border/70 bg-card/70 p-5 shadow-sm backdrop-blur transition-all duration-200 hover:-translate-y-1 hover:shadow-md motion-reduce:hover:translate-none!"
                 >
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand transition-transform duration-200 group-hover:scale-110 motion-reduce:transform-none motion-reduce:scale-none">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand transition-transform duration-200 group-hover:scale-110 motion-reduce:group-hover:scale-none!">
                     <Icon className="size-5" aria-hidden="true" />
                   </span>
                   <div className="min-w-0">

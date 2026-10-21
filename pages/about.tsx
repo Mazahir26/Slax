@@ -116,10 +116,10 @@ export default function About() {
             {features.map(({ title, description, Icon, accent }) => (
               <li
                 key={title}
-                className="group flex flex-col rounded-2xl border border-border/70 bg-card p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-brand/30 hover:shadow-md motion-reduce:transform-none motion-reduce:translate-none"
+                className="group flex flex-col rounded-2xl border border-border/70 bg-card p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-brand/30 hover:shadow-md motion-reduce:hover:translate-none!"
               >
                 <span
-                  className={`flex size-11 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-110 motion-reduce:transform-none motion-reduce:scale-none ${accent}`}
+                  className={`flex size-11 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-110 motion-reduce:group-hover:scale-none! ${accent}`}
                 >
                   <Icon className="size-5" aria-hidden="true" />
                 </span>
@@ -150,9 +150,9 @@ export default function About() {
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex h-full flex-col items-center gap-3 rounded-2xl border border-border/70 bg-card p-6 text-center shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md motion-reduce:transform-none motion-reduce:translate-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                  className="group flex h-full flex-col items-center gap-3 rounded-2xl border border-border/70 bg-card p-6 text-center shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md motion-reduce:hover:translate-none! focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
                 >
-                  <span className="flex size-14 items-center justify-center rounded-2xl bg-muted text-foreground transition-all duration-200 group-hover:scale-105 group-hover:bg-brand/10 group-hover:text-brand motion-reduce:transform-none motion-reduce:scale-none">
+                  <span className="flex size-14 items-center justify-center rounded-2xl bg-muted text-foreground transition-all duration-200 group-hover:scale-105 group-hover:bg-brand/10 group-hover:text-brand motion-reduce:group-hover:scale-none!">
                     <Icon className="size-7" aria-hidden="true" />
                   </span>
                   <span className="font-semibold">{name}</span>

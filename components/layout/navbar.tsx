@@ -122,7 +122,7 @@ export default function Navbar() {
           className="group flex min-h-11 min-w-0 items-center gap-2 rounded-xl pr-2 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
           aria-label="Slax home"
         >
-          <span className="bg-playful-gradient flex size-9 shrink-0 items-center justify-center rounded-xl text-white shadow-sm transition-transform duration-200 group-hover:-rotate-6 motion-reduce:transform-none motion-reduce:rotate-none">
+          <span className="bg-playful-gradient flex size-9 shrink-0 items-center justify-center rounded-xl text-white shadow-sm transition-transform duration-200 group-hover:-rotate-6 motion-reduce:group-hover:rotate-none!">
             <Cake className="size-5" aria-hidden="true" />
           </span>
           <span className="truncate text-2xl font-bold tracking-tight transition-colors duration-200 group-hover:text-brand">
@@ -324,7 +324,7 @@ export default function Navbar() {
                 <Link
                   href="/about"
                   onClick={closeMobile}
-                  className="flex min-h-11 items-center rounded-xl px-3 text-sm font-medium transition-all duration-200 hover:bg-accent hover:text-accent-foreground active:scale-[0.99] motion-reduce:transform-none motion-reduce:scale-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                  className="flex min-h-11 items-center rounded-xl px-3 text-sm font-medium transition-all duration-200 hover:bg-accent hover:text-accent-foreground active:scale-[0.99] motion-reduce:active:scale-none! focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
                 >
                   About
                 </Link>
@@ -332,7 +332,7 @@ export default function Navbar() {
                 <button
                   type="button"
                   onClick={toggleTheme}
-                  className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 text-sm font-medium transition-all duration-200 hover:bg-accent hover:text-accent-foreground active:scale-[0.99] motion-reduce:transform-none motion-reduce:scale-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                  className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 text-sm font-medium transition-all duration-200 hover:bg-accent hover:text-accent-foreground active:scale-[0.99] motion-reduce:active:scale-none! focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
                 >
                   {isDark ? (
                     <Sun className="size-4" aria-hidden="true" />
@@ -352,7 +352,7 @@ export default function Navbar() {
                     <Link
                       href="/dashboard"
                       onClick={closeMobile}
-                      className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 text-sm font-medium transition-all duration-200 hover:bg-accent hover:text-accent-foreground active:scale-[0.99] motion-reduce:transform-none motion-reduce:scale-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                      className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 text-sm font-medium transition-all duration-200 hover:bg-accent hover:text-accent-foreground active:scale-[0.99] motion-reduce:active:scale-none! focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
                     >
                       <LayoutDashboard
                         className="size-4"
@@ -366,7 +366,7 @@ export default function Navbar() {
                         closeMobile();
                         setSignOutOpen(true);
                       }}
-                      className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 text-sm font-medium transition-all duration-200 hover:bg-accent hover:text-accent-foreground active:scale-[0.99] motion-reduce:transform-none motion-reduce:scale-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                      className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 text-sm font-medium transition-all duration-200 hover:bg-accent hover:text-accent-foreground active:scale-[0.99] motion-reduce:active:scale-none! focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
                     >
                       <LogOut className="size-4" aria-hidden="true" />
                       Sign out
@@ -377,7 +377,7 @@ export default function Navbar() {
                         closeMobile();
                         setDeleteOpen(true);
                       }}
-                      className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 text-sm font-medium text-destructive transition-all duration-200 hover:bg-destructive/10 active:scale-[0.99] motion-reduce:transform-none motion-reduce:scale-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                      className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 text-sm font-medium text-destructive transition-all duration-200 hover:bg-destructive/10 active:scale-[0.99] motion-reduce:active:scale-none! focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
                     >
                       <Trash2 className="size-4" aria-hidden="true" />
                       Delete account
