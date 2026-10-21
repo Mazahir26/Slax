@@ -1,0 +1,139 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: var(--font-quicksand), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: var(--font-caveat), var(--font-quicksand), cursive;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-accent-pink: var(--accent-pink);
+  --color-accent-pink-foreground: var(--accent-pink-foreground);
+
+  --radius-sm: calc(var(--radius) - 8px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 12px);
+  --radius-3xl: calc(var(--radius) + 20px);
+}
+
+:root {
+  --radius: 1rem;
+
+  --background: oklch(0.9885 0.0057 84.57);
+  --foreground: oklch(0.2275 0.0139 272.7);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2275 0.0139 272.7);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2275 0.0139 272.7);
+  --primary: oklch(0.6815 0.1545 253.52);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.9653 0.0102 81.8);
+  --secondary-foreground: oklch(0.2725 0.015 272.7);
+  --muted: oklch(0.9653 0.0102 81.8);
+  --muted-foreground: oklch(0.51 0.0148 268);
+  --accent: oklch(0.9545 0.0272 348.33);
+  --accent-foreground: oklch(0.42 0.11 350);
+  --destructive: oklch(0.577 0.245 27.33);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.9 0.008 260);
+  --input: oklch(0.9 0.008 260);
+  --ring: oklch(0.6815 0.1545 253.52);
+
+  --brand: oklch(0.6815 0.1545 253.52);
+  --brand-foreground: oklch(0.99 0 0);
+  --accent-pink: oklch(0.7062 0.1694 351.08);
+  --accent-pink-foreground: oklch(0.99 0 0);
+}
+
+.dark {
+  --background: oklch(0.1783 0.0128 270.6);
+  --foreground: oklch(0.955 0.0045 260);
+  --card: oklch(0.2275 0.0139 272.7);
+  --card-foreground: oklch(0.955 0.0045 260);
+  --popover: oklch(0.2275 0.0139 272.7);
+  --popover-foreground: oklch(0.955 0.0045 260);
+  --primary: oklch(0.72 0.15 253.52);
+  --primary-foreground: oklch(0.18 0.02 270);
+  --secondary: oklch(0.2695 0.0173 270.7);
+  --secondary-foreground: oklch(0.955 0.0045 260);
+  --muted: oklch(0.2695 0.0173 270.7);
+  --muted-foreground: oklch(0.71 0.014 262);
+  --accent: oklch(0.31 0.052 350);
+  --accent-foreground: oklch(0.94 0.025 350);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.72 0.15 253.52);
+
+  --brand: oklch(0.72 0.15 253.52);
+  --brand-foreground: oklch(0.18 0.02 270);
+  --accent-pink: oklch(0.7511 0.1742 352.89);
+  --accent-pink-foreground: oklch(0.18 0.02 350);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+    min-height: 100dvh;
+  }
+
+  ::selection {
+    background-color: color-mix(in oklch, var(--accent-pink) 35%, transparent);
+  }
+}
+
+@layer utilities {
+  .bg-playful-gradient {
+    background-image: linear-gradient(
+      135deg,
+      var(--brand) 0%,
+      var(--accent-pink) 100%
+    );
+  }
+
+  .text-playful-gradient {
+    background-image: linear-gradient(
+      135deg,
+      var(--brand) 0%,
+      var(--accent-pink) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
