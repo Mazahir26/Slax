@@ -1,146 +1,173 @@
-import {
-  Box,
-  Heading,
-  Container,
-  Text,
-  Button,
-  Stack,
-  Icon,
-  useColorModeValue,
-  createIcon,
-} from "@chakra-ui/react";
 import type { GetServerSideProps, NextPage } from "next";
-import { getSession, signIn, useSession } from "next-auth/react";
-import { useRouter } from "next/router";
-import Footer from "../components/layout/footer";
-import "@fontsource/caveat/400.css";
 import Head from "next/head";
+import Link from "next/link";
+import { useRouter } from "next/router";
+import { getSession, signIn, useSession } from "next-auth/react";
+import { ArrowRight, BellRing, Heart, Mail, Sparkles } from "lucide-react";
+
+import Footer from "../components/layout/footer";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+
+const features = [
+  {
+    title: "Email reminders",
+    description: "Every birthday lands in your inbox, on all of your devices.",
+    Icon: Mail,
+  },
+  {
+    title: "3-day heads-up",
+    description: "A gentle nudge three days early, so you have time to plan.",
+    Icon: BellRing,
+  },
+  {
+    title: "Free forever",
+    description: "Open source, ad-free and no catch. Just birthdays.",
+    Icon: Heart,
+  },
+];
 
 const Home: NextPage = () => {
   const { status } = useSession();
   const router = useRouter();
-  const iconColor = useColorModeValue("gray.800", "gray.300");
+
   return (
     <>
       <Head>
-        <title>Slax </title>
-        <meta name="viewport" content="initial-scale=1.0, width=device-width" />
+        <title>Slax — Birthday reminders for the people you love</title>
+        <meta
+          name="description"
+          content="Create an account, add birthdays and forget about it. Slax emails you three days before every birthday so you can plan something special."
+        />
       </Head>
-      <Container h={["80vh", "80vh", "auto"]} maxW={"2xl"}>
-        <Stack
-          as={Box}
-          textAlign={"center"}
-          spacing={{ base: 8, md: 14 }}
-          py={{ base: "16", md: "32" }}
-        >
-          <Heading
-            fontWeight={600}
-            fontSize={{ base: "2xl", sm: "4xl", md: "6xl" }}
-            lineHeight={"110%"}
-          >
-            Never forget birthdays <br />
-            <Text
-              as={"span"}
-              bgClip="text"
-              bgGradient="linear(to-tr, #3494e6, #ec6ead)"
-            >
-              of your loved ones.
-            </Text>
-          </Heading>
-          <Text color={"gray.500"}>
-            You ask how? It&apos;s very easy create an account, add birthdays
-            and forget about it. We will make sure that you remember their
-            birthday, So you can focus on planing an surprise for them 😉.
-          </Text>
-          <Stack
-            direction={"column"}
-            spacing={3}
-            align={"center"}
-            alignSelf={"center"}
-            position={"relative"}
-          >
-            {status === "authenticated" ? (
-              <Button
-                colorScheme={"brand"}
-                bg={"brand.400"}
-                rounded={"full"}
-                px={6}
-                _hover={{
-                  bg: "brand.500",
-                }}
-                onClick={() => router.replace("/dashboard")}
-              >
-                Go to Dashboard
-              </Button>
-            ) : (
-              <>
-                <Button
-                  colorScheme={"brand"}
-                  bg={"brand.400"}
-                  rounded={"full"}
-                  px={6}
-                  _hover={{
-                    bg: "brand.500",
-                  }}
-                  onClick={() => signIn()}
-                >
-                  Create an Account
-                </Button>
-                <Button
-                  onClick={() => signIn()}
-                  variant={"link"}
-                  colorScheme={"brand"}
-                  size={"sm"}
-                >
-                  Have an account. Sign in instead?
-                </Button>
 
-                <Box display={["none", "initial"]}>
-                  <Icon
-                    as={Arrow}
-                    color={iconColor}
-                    w={71}
-                    position={"absolute"}
-                    right={-71}
-                    top={"10px"}
-                  />
-                  <Text
-                    fontSize={"lg"}
-                    fontFamily={"Caveat"}
-                    position={"absolute"}
-                    right={"-125px"}
-                    top={"-15px"}
-                    transform={"rotate(10deg)"}
+      <section className="relative isolate flex min-h-[calc(100dvh-4rem)] flex-col justify-center overflow-hidden">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 -z-10"
+        >
+          <div className="absolute -top-32 -left-24 size-72 rounded-full bg-brand/20 blur-3xl sm:size-96" />
+          <div className="absolute top-10 -right-24 size-72 rounded-full bg-accent-pink/20 blur-3xl sm:size-96" />
+          <div className="absolute bottom-0 left-1/3 size-64 rounded-full bg-brand/10 blur-3xl" />
+        </div>
+
+        <div className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
+          <div className="mx-auto max-w-3xl text-center">
+            <Badge
+              variant="outline"
+              className="gap-1.5 rounded-full border-brand/30 bg-brand/5 px-3 py-1.5 text-xs font-medium text-brand"
+            >
+              <Sparkles className="size-3.5" aria-hidden="true" />
+              Birthday reminders, on autopilot
+            </Badge>
+
+            <h1 className="mt-6 text-balance text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
+              Never forget birthdays{" "}
+              <span className="text-playful-gradient">
+                of your loved ones.
+              </span>
+            </h1>
+
+            <p className="mx-auto mt-5 max-w-2xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
+              Create an account, add the birthdays you care about and forget
+              about it. We&apos;ll email you three days early, so you can focus
+              on planning the surprise. 😉
+            </p>
+
+            <div className="mt-9 flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
+              {status === "authenticated" ? (
+                <Button
+                  size="lg"
+                  className="bg-brand text-brand-foreground hover:bg-brand/90 h-12 rounded-full px-7 text-base shadow-sm"
+                  onClick={() => router.push("/dashboard")}
+                >
+                  Go to Dashboard
+                  <ArrowRight aria-hidden="true" />
+                </Button>
+              ) : (
+                <>
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      size="lg"
+                      className="bg-brand text-brand-foreground hover:bg-brand/90 h-12 rounded-full px-7 text-base shadow-sm"
+                      onClick={() => signIn()}
+                    >
+                      Create an account
+                    </Button>
+
+                    <span
+                      aria-hidden="true"
+                      className="pointer-events-none mx-1 hidden items-center gap-1 select-none sm:flex"
+                    >
+                      <svg
+                        width="46"
+                        height="30"
+                        viewBox="0 0 46 30"
+                        fill="none"
+                        className="text-muted-foreground/70"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M43 25c-10 3-24-1-33-13"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                        />
+                        <path
+                          d="M10 12 9 20M10 12l7 4"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      <span className="font-display -translate-y-2 rotate-6 text-2xl text-muted-foreground">
+                        it&apos;s free
+                      </span>
+                    </span>
+                  </div>
+
+                  <Button
+                    asChild
+                    variant="ghost"
+                    className="h-11 rounded-full px-4 text-sm font-medium text-muted-foreground hover:text-foreground"
                   >
-                    its free
-                  </Text>
-                </Box>
-              </>
-            )}
-          </Stack>
-        </Stack>
-      </Container>
+                    <Link href="/login">Have an account? Sign in</Link>
+                  </Button>
+                </>
+              )}
+            </div>
+
+            <ul className="mx-auto mt-14 grid max-w-4xl gap-4 text-left sm:mt-16 sm:grid-cols-3">
+              {features.map(({ title, description, Icon }) => (
+                <li
+                  key={title}
+                  className="flex items-start gap-3 rounded-2xl border border-border/70 bg-card/70 p-5 shadow-sm backdrop-blur"
+                >
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand">
+                    <Icon className="size-5" aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-semibold">{title}</p>
+                    <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                      {description}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
       <Footer />
     </>
   );
 };
 
-const Arrow = createIcon({
-  displayName: "Arrow",
-  viewBox: "0 0 72 24",
-  path: (
-    <path
-      fillRule="evenodd"
-      clipRule="evenodd"
-      d="M0.600904 7.08166C0.764293 6.8879 1.01492 6.79004 1.26654 6.82177C2.83216 7.01918 5.20326 7.24581 7.54543 7.23964C9.92491 7.23338 12.1351 6.98464 13.4704 6.32142C13.84 6.13785 14.2885 6.28805 14.4722 6.65692C14.6559 7.02578 14.5052 7.47362 14.1356 7.6572C12.4625 8.48822 9.94063 8.72541 7.54852 8.7317C5.67514 8.73663 3.79547 8.5985 2.29921 8.44247C2.80955 9.59638 3.50943 10.6396 4.24665 11.7384C4.39435 11.9585 4.54354 12.1809 4.69301 12.4068C5.79543 14.0733 6.88128 15.8995 7.1179 18.2636C7.15893 18.6735 6.85928 19.0393 6.4486 19.0805C6.03792 19.1217 5.67174 18.8227 5.6307 18.4128C5.43271 16.4346 4.52957 14.868 3.4457 13.2296C3.3058 13.0181 3.16221 12.8046 3.01684 12.5885C2.05899 11.1646 1.02372 9.62564 0.457909 7.78069C0.383671 7.53862 0.437515 7.27541 0.600904 7.08166ZM5.52039 10.2248C5.77662 9.90161 6.24663 9.84687 6.57018 10.1025C16.4834 17.9344 29.9158 22.4064 42.0781 21.4773C54.1988 20.5514 65.0339 14.2748 69.9746 0.584299C70.1145 0.196597 70.5427 -0.0046455 70.931 0.134813C71.3193 0.274276 71.5206 0.70162 71.3807 1.08932C66.2105 15.4159 54.8056 22.0014 42.1913 22.965C29.6185 23.9254 15.8207 19.3142 5.64226 11.2727C5.31871 11.0171 5.26415 10.5479 5.52039 10.2248Z"
-      fill="currentColor"
-    />
-  ),
-});
-
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const session = await getSession(context);
-  // context.res.writeHead(401, { Location: "/dashboard" });
+
   if (session) {
     return {
       redirect: {
@@ -149,6 +176,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       },
     };
   }
+
   return {
     props: {},
   };

@@ -3,6 +3,7 @@ import { SessionProvider } from "next-auth/react";
 import { Caveat, Quicksand } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import Navbar from "@/components/layout/navbar";
 import "../styles/globals.css";
 
 const quicksand = Quicksand({
@@ -27,9 +28,12 @@ export default function MyApp({ Component, pageProps }: AppProps) {
         disableTransitionOnChange
       >
         <div
-          className={`${quicksand.variable} ${caveat.variable} min-h-dvh font-sans`}
+          className={`${quicksand.variable} ${caveat.variable} flex min-h-dvh flex-col font-sans`}
         >
-          <Component {...pageProps} />
+          <Navbar />
+          <main className="flex-1">
+            <Component {...pageProps} />
+          </main>
         </div>
         <Toaster richColors position="bottom-left" />
       </ThemeProvider>

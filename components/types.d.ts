@@ -24,3 +24,13 @@ export interface event {
   color: string;
   isUser?: boolean;
 }
+
+/** The two ways the dashboard can display the birthday list. */
+export type CalendarView = "agenda" | "month";
+
+/** Payload accepted by the add-birthday dialog. */
+export interface NewBirthday {
+  name: string;
+  date: moment.Moment;
+  color: string;
+}

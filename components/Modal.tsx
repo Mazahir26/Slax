@@ -1,24 +1,44 @@
-import {
-  Box,
-  Button,
-  Flex,
-  FormControl,
-  FormErrorMessage,
-  FormHelperText,
-  FormLabel,
-  Input,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalHeader,
-  ModalOverlay,
-} from "@chakra-ui/react";
-import { Field, Form, Formik } from "formik";
+import { useEffect } from "react";
+import { useForm, type SubmitHandler } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import moment from "moment";
-import { useState } from "react";
+import { Loader2, X } from "lucide-react";
+
+import Colors from "../lib/colors";
+import { createEventSchema } from "../lib/validation";
+import { Button } from "./ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "./ui/form";
+import { Input } from "./ui/input";
 import ColorSelector from "./ColorSelector";
-import options from "../lib/colors";
+import type { NewBirthday } from "./types";
+
+type CreateFormInput = z.input<typeof createEventSchema>;
+type CreateFormOutput = z.output<typeof createEventSchema>;
+
+const DEFAULT_COLOR = Colors[0];
+
+function capitalize(value: string) {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
 export default function BirthdayModal({
   isOpen,
   onClose,
@@ -26,124 +46,178 @@ export default function BirthdayModal({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  PushEvent: Function;
+  PushEvent: (event: NewBirthday) => Promise<void> | void;
 }) {
-  const [color, setColor] = useState("#FFFFFF");
+  const form = useForm<CreateFormInput, unknown, CreateFormOutput>({
+    resolver: zodResolver(createEventSchema),
+    mode: "onTouched",
+    defaultValues: {
+      name: "",
+      date: "",
+      color: DEFAULT_COLOR,
+    },
+  });
 
-  function validateName(value: string) {
-    let error;
-    if (!value && value.length > 0) {
-      error = "Name is required";
-    }
-    return error;
-  }
+  const { isSubmitting } = form.formState;
+  const { reset } = form;
+  const today = moment().format("YYYY-MM-DD");
+  const oldest = moment().subtract(120, "years").format("YYYY-MM-DD");
 
-  function validateDate(value: moment.Moment) {
-    let error;
-    if (!moment(value).isValid()) {
-      error = "Invalid Date";
+  // Start from a clean form every time the dialog is opened.
+  useEffect(() => {
+    if (!isOpen) return;
+    reset({ name: "", date: "", color: DEFAULT_COLOR });
+  }, [isOpen, reset]);
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open && !isSubmitting) onClose();
+  };
+
+  const onSubmit: SubmitHandler<CreateFormOutput> = async (values) => {
+    try {
+      await PushEvent({
+        name: capitalize(values.name),
+        date: moment(values.date),
+        color: values.color,
+      });
+      onClose();
+    } catch {
+      // The dashboard surfaces a toast; keep the dialog open so the user can
+      // fix the problem and try again.
     }
-    if (Math.abs(moment(value).diff(moment(), "years")) >= 100) {
-      error = "Invalid Date";
-    }
-    if (moment(value).isAfter(moment())) {
-      error = "Invalid Date";
-    }
-    return error;
-  }
+  };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader>Add a Birthday</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody>
-          <Formik
-            initialValues={{
-              name: "",
-              date: "",
-            }}
-            onSubmit={(values, actions) => {
-              PushEvent({
-                name:
-                  values.name.charAt(0).toUpperCase() + values.name.slice(1),
-                date: moment(values.date),
-                color: color,
-              });
-              actions.setSubmitting(false);
-              onClose();
-            }}
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <DialogContent
+        showCloseButton={false}
+        className="max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl border-border bg-card p-5 text-card-foreground shadow-xl sm:max-w-md sm:p-6"
+      >
+        <DialogHeader className="gap-1.5 pr-14 text-left">
+          <DialogTitle className="font-display text-3xl font-semibold">
+            Add a Birthday
+          </DialogTitle>
+          <DialogDescription>
+            A name, a date, and a splash of color. That&apos;s all we need.
+          </DialogDescription>
+        </DialogHeader>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>First name</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="eg. Saitama"
+                      autoComplete="off"
+                      autoCapitalize="words"
+                      className="h-11 rounded-xl"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="date"
+              render={({ field, fieldState }) => (
+                <FormItem>
+                  <FormLabel>Date of birth</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="date"
+                      max={today}
+                      min={oldest}
+                      value={typeof field.value === "string" ? field.value : ""}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
+                      className="h-11 rounded-xl"
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    We&apos;ll remind you every year on this date.
+                  </FormDescription>
+                  <FormMessage>{fieldState.error?.message}</FormMessage>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="color"
+              render={({ field, fieldState }) => (
+                <FormItem>
+                  <span className="text-sm leading-none font-medium">
+                    Color
+                  </span>
+                  <ColorSelector
+                    options={Colors}
+                    color={
+                      typeof field.value === "string"
+                        ? field.value
+                        : DEFAULT_COLOR
+                    }
+                    setColor={field.onChange}
+                    disabled={isSubmitting}
+                  />
+                  {fieldState.error?.message ? (
+                    <p className="text-sm text-destructive">
+                      {fieldState.error.message}
+                    </p>
+                  ) : null}
+                </FormItem>
+              )}
+            />
+
+            <DialogFooter className="gap-2 pt-1">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={isSubmitting}
+                className="h-11 w-full rounded-full sm:w-auto"
+              >
+                Close
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="h-11 w-full rounded-full bg-brand px-5 text-brand-foreground hover:bg-brand/90 sm:w-auto"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="animate-spin" aria-hidden="true" />
+                    Saving…
+                  </>
+                ) : (
+                  "Save"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+
+        <DialogClose asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Close dialog"
+            className="absolute top-3 right-3 z-10 size-11 rounded-full"
           >
-            {(props) => (
-              <Form>
-                <Field name="name" validate={validateName}>
-                  {({ field, form }: any) => (
-                    <FormControl
-                      isInvalid={form.errors.name && form.touched.name}
-                    >
-                      <FormLabel htmlFor="name">First name</FormLabel>
-                      <Input
-                        {...field}
-                        variant="flushed"
-                        id="name"
-                        placeholder="eg. Saitama"
-                      />
-
-                      <FormErrorMessage>{form.errors.name}</FormErrorMessage>
-                    </FormControl>
-                  )}
-                </Field>
-                <Box my="4" />
-                <Field name="date" validate={validateDate}>
-                  {({ field, form }: any) => (
-                    <FormControl
-                      isInvalid={form.errors.date && form.touched.date}
-                    >
-                      <FormLabel>Date</FormLabel>
-                      <Input
-                        {...field}
-                        id="date"
-                        type={"date"}
-                        variant={"flushed"}
-                      />
-                      <FormHelperText>Format : MM/DD/YYYY</FormHelperText>
-
-                      <FormErrorMessage>{form.errors.date}</FormErrorMessage>
-                    </FormControl>
-                  )}
-                </Field>
-                <Box my="4" />
-                <FormLabel>Color</FormLabel>
-                <ColorSelector
-                  color={color}
-                  options={options}
-                  setColor={(color) => setColor(color)}
-                />
-                <Flex
-                  mt="6"
-                  mb="2"
-                  flexDirection={"row"}
-                  justifyContent="flex-end"
-                >
-                  <Button
-                    colorScheme={"brand"}
-                    mr={3}
-                    isLoading={props.isSubmitting}
-                    type="submit"
-                  >
-                    Save
-                  </Button>
-
-                  <Button onClick={onClose} variant="ghost">
-                    Close
-                  </Button>
-                </Flex>
-              </Form>
-            )}
-          </Formik>
-        </ModalBody>
-      </ModalContent>
-    </Modal>
+            <X aria-hidden="true" />
+          </Button>
+        </DialogClose>
+      </DialogContent>
+    </Dialog>
   );
 }

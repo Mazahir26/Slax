@@ -1,267 +1,381 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  Flex,
-  Box,
-  Stack,
-  Heading,
-  Text,
-  useColorModeValue,
-  FormControl,
-  FormLabel,
-  Input,
-  FormErrorMessage,
-  FormHelperText,
-  Button,
-  Spinner,
-  useToast,
-} from "@chakra-ui/react";
-import { Field, Form, Formik } from "formik";
+  ArrowRight,
+  Cake,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
 import moment from "moment";
-
 import { useSession } from "next-auth/react";
-import Head from "next/head";
 import { useRouter } from "next/router";
-import { NextPage } from "next/types";
-import { useEffect, useState } from "react";
-import Footer from "../components/layout/footer";
+import { useEffect, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import type { z } from "zod";
+
+import {
+  AuthCard,
+  AuthShell,
+} from "@/components/auth/auth-shell";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
+import {
+  onboardingSchema,
+  type OnboardingInput,
+} from "@/lib/validation";
 import { addEvent, getUser } from "../lib/helperFunctions";
 
-const OnBoarding: NextPage = () => {
+// Raw form shape from the shared schema. The date stays a string while the
+// user types; zod transforms it to a Date before onSubmit sees it.
+type OnboardingFormValues = z.input<typeof onboardingSchema>;
+
+async function markOnboardingComplete() {
+  const response = await fetch("/api/newUser", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to complete onboarding (${response.status})`);
+  }
+}
+
+/** Mirrors the finished card's layout so the page does not jump on load. */
+function OnboardingSkeleton() {
+  return (
+    <AuthCard aria-busy="true" aria-live="polite">
+      <div className="space-y-6">
+        <div className="flex items-center justify-between gap-3">
+          <Skeleton className="h-6 w-28 rounded-full" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+
+        <div className="space-y-3">
+          <Skeleton className="size-12 rounded-2xl" />
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-52 max-w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
+          </div>
+        </div>
+
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-11 w-full rounded-xl" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-11 w-full rounded-xl" />
+            <Skeleton className="h-4 w-56 max-w-full" />
+          </div>
+          <div className="grid grid-cols-2 gap-3 pt-1">
+            <Skeleton className="h-11 rounded-xl" />
+            <Skeleton className="h-11 rounded-xl" />
+          </div>
+        </div>
+
+        <div className="flex items-start gap-2.5 rounded-2xl bg-muted/30 p-3.5">
+          <Skeleton className="size-4 shrink-0 rounded" />
+          <div className="w-full space-y-1.5">
+            <Skeleton className="h-3 w-full" />
+            <Skeleton className="h-3 w-4/5" />
+          </div>
+        </div>
+      </div>
+      <span className="sr-only">Loading…</span>
+    </AuthCard>
+  );
+}
+
+export default function OnboardingPage() {
   const { status, data: session } = useSession();
-  const [isNew, setIsNew] = useState<boolean | undefined>();
-  const [loading, setLoading] = useState<boolean>(false);
   const router = useRouter();
-  const color = useColorModeValue("white", "gray.700");
-  const toast = useToast();
+  const [checking, setChecking] = useState(true);
+  const [skipPending, setSkipPending] = useState(false);
+
+  const today = useMemo(() => {
+    const now = new Date();
+    const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
+    return local.toISOString().slice(0, 10);
+  }, []);
+
+  const form = useForm<OnboardingFormValues, unknown, OnboardingInput>({
+    resolver: zodResolver(onboardingSchema),
+    defaultValues: {
+      name: "",
+      date: "",
+    },
+    mode: "onTouched",
+  });
+  const { isSubmitting } = form.formState;
+  const isBusy = isSubmitting || skipPending;
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.replace("/login");
-    } else if (status === "authenticated") {
-      GetUser();
+      void router.replace("/login");
+      return;
     }
+
+    if (status !== "authenticated") {
+      return;
+    }
+
+    let active = true;
+
+    void (async () => {
+      try {
+        const user = await getUser();
+
+        if (!active) {
+          return;
+        }
+
+        if (user.isNew === false) {
+          void router.replace("/dashboard");
+          return;
+        }
+
+        setChecking(false);
+      } catch (error) {
+        console.error(error);
+
+        if (!active) {
+          return;
+        }
+
+        toast.error("We couldn't load your profile.", {
+          description: "Please try again in a moment.",
+        });
+        void router.replace("/error?error=ServerError");
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
   }, [status, router]);
 
-  if (status === "loading" || isNew === undefined) {
+  async function onSubmit(values: OnboardingInput) {
+    if (isBusy) {
+      return;
+    }
+
+    const email = session?.user?.email;
+
+    if (!email) {
+      toast.error("We couldn't find your account.", {
+        description: "Please sign in again to continue.",
+      });
+      return;
+    }
+
+    try {
+      await addEvent({
+        name: values.name,
+        date: moment(values.date),
+        color: "#F1BF98",
+        email,
+        isUser: true,
+      });
+      await markOnboardingComplete();
+
+      toast.success("Birthday added. 🎉", {
+        description: "Welcome to Slax — let's make every birthday count.",
+      });
+      await router.push("/dashboard");
+    } catch (error) {
+      console.error(error);
+      toast.error("Oops, something went wrong!", {
+        description: "We couldn't save your birthday. Please try again.",
+      });
+    }
+  }
+
+  async function handleSkip() {
+    if (isBusy) {
+      return;
+    }
+
+    setSkipPending(true);
+    try {
+      await markOnboardingComplete();
+
+      toast.success("You're all set!", {
+        description: "You can add your birthday anytime from your dashboard.",
+      });
+      await router.push("/dashboard");
+    } catch (error) {
+      console.error(error);
+      toast.error("Oops, something went wrong!", {
+        description: "We couldn't finish setting up your account. Please try again.",
+      });
+    } finally {
+      setSkipPending(false);
+    }
+  }
+
+  if (status === "loading" || checking) {
     return (
-      <Flex minH={"85vh"} align={"center"} justify={"center"}>
-        <Spinner
-          size={"xl"}
-          emptyColor="gray.300"
-          color="brand.500"
-          speed="0.8s"
-          thickness="4px"
-        />
-      </Flex>
+      <AuthShell
+        title="Welcome | Slax"
+        description="Finish setting up your Slax account."
+      >
+        <OnboardingSkeleton />
+      </AuthShell>
     );
   }
 
-  function validateName(value: string) {
-    let error;
-    if (!value && value.length > 0) {
-      error = "Name is required";
-    }
-    return error;
-  }
-
-  function validateDate(value: moment.Moment) {
-    let error;
-    if (!moment(value).isValid()) {
-      error = "Invalid Date";
-    }
-    if (Math.abs(moment(value).diff(moment(), "years")) >= 100) {
-      error = "Invalid Date";
-    }
-    if (moment(value).isAfter(moment())) {
-      error = "Invalid Date";
-    }
-    return error;
-  }
-
-  async function GetUser() {
-    try {
-      const res = await getUser();
-      if (res.isNew === false) {
-        router.replace("/dashboard");
-      } else {
-        setIsNew(res.isNew);
-      }
-    } catch (error) {
-      console.log(error);
-      router.push("/error?error=ServerError");
-    }
-  }
-  async function setUpUser() {
-    if (session?.user?.email) {
-      try {
-        const response = await fetch("/api/newUser", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-        if (response.status !== 200) {
-          throw Error(response.status.toString());
-        }
-      } catch (err: any) {
-        throw Error(err);
-      }
-    }
-  }
-
-  async function addUser(event: { name: string; date: moment.Moment }) {
-    if (session?.user?.email) {
-      try {
-        await addEvent({
-          name: event.name,
-          date: event.date,
-          color: "#F1BF98",
-          email: session.user.email,
-          isUser: true,
-        });
-        await setUpUser();
-        router.push("/dashboard");
-        toast({
-          position: "bottom-left",
-          title: "Birthday Added. 🎉",
-          status: "success",
-          duration: 5000,
-          isClosable: true,
-        });
-      } catch (err) {
-        toast({
-          position: "bottom-left",
-          title: "Oops something went wrong!",
-          status: "error",
-          description: ` Please Try again ..:(`,
-          duration: 5000,
-          isClosable: true,
-        });
-        console.log(err);
-      }
-    }
-  }
-
   return (
-    <>
-      <Head>
-        <title>Welcome | Slax </title>
-      </Head>
+    <AuthShell
+      title="Welcome | Slax"
+      description="Add your birthday and finish setting up your Slax account."
+    >
+      <AuthCard>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between gap-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-brand/10 px-3 py-1 text-xs font-semibold tracking-wide text-brand uppercase">
+              <Sparkles className="size-3.5" aria-hidden="true" />
+              Quick setup
+            </span>
+            <span className="text-xs text-muted-foreground">
+              Takes 20 seconds
+            </span>
+          </div>
 
-      <Flex minH={"85vh"} align={"center"} justify={"center"}>
-        <Stack spacing={8} mx={"auto"} maxW={"lg"} py={12} px={6}>
-          <Stack align={"center"}>
-            <Heading textAlign={"center"} fontSize={"4xl"}>
-              Welcome to Slax
-            </Heading>
-            <Text fontSize={"lg"} color={"gray.600"}>
-              Add your birthday, Your birthday is important to us! 😁
-            </Text>
-          </Stack>
-          <Box rounded={"lg"} bg={color} boxShadow={"lg"} p={6}>
-            <Formik
-              initialValues={{
-                name: "",
-                date: "",
-              }}
-              onSubmit={async (values, actions) => {
-                await addUser({
-                  date: moment(values.date),
-                  name: values.name,
-                });
-                actions.setSubmitting(false);
-              }}
+          <div className="space-y-3">
+            <div className="grid size-12 place-items-center rounded-2xl bg-playful-gradient text-white shadow-lg shadow-brand/20">
+              <Cake className="size-6" aria-hidden="true" />
+            </div>
+            <div className="space-y-2">
+              <h1 className="text-2xl font-bold tracking-tight text-balance sm:text-3xl">
+                Welcome to Slax
+              </h1>
+              <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
+                Add your birthday — your birthday is important to us! 😁
+                We&apos;ll use it to send you a little celebration every year.
+              </p>
+            </div>
+          </div>
+
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              noValidate
+              aria-busy={isBusy}
+              className="space-y-5"
             >
-              {(props) => (
-                <Form>
-                  <Field name="name" validate={validateName}>
-                    {({ field, form }: any) => (
-                      <FormControl
-                        isInvalid={form.errors.name && form.touched.name}
-                      >
-                        <FormLabel htmlFor="name">Your Name</FormLabel>
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Your name</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        autoComplete="name"
+                        placeholder="e.g. Saitama"
+                        className="h-11 rounded-xl"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => {
+                  const dateValue =
+                    typeof field.value === "string" ? field.value : "";
+
+                  return (
+                    <FormItem>
+                      <FormLabel>Date of birth</FormLabel>
+                      <FormControl>
                         <Input
                           {...field}
-                          variant="flushed"
-                          id="name"
-                          placeholder="eg. Saitama"
+                          value={dateValue}
+                          type="date"
+                          max={today}
+                          autoComplete="bday"
+                          className="h-11 rounded-xl [color-scheme:light] dark:[color-scheme:dark]"
                         />
-
-                        <FormErrorMessage>{form.errors.name}</FormErrorMessage>
                       </FormControl>
-                    )}
-                  </Field>
-                  <Box my="4" />
-                  <Field name="date" validate={validateDate}>
-                    {({ field, form }: any) => (
-                      <FormControl
-                        isInvalid={form.errors.date && form.touched.date}
-                      >
-                        <FormLabel>Date of Birth</FormLabel>
-                        <Input
-                          {...field}
-                          id="date"
-                          type={"date"}
-                          variant={"flushed"}
-                        />
-                        <FormHelperText>Format : MM/DD/YYYY</FormHelperText>
+                      <FormDescription>
+                        We&apos;ll only use this to celebrate you every year.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
 
-                        <FormErrorMessage>{form.errors.date}</FormErrorMessage>
-                      </FormControl>
-                    )}
-                  </Field>
-                  <Box my="4" />
-                  <Flex
-                    mt="6"
-                    mb="2"
-                    flexDirection={"row"}
-                    justifyContent="space-between"
-                  >
-                    <Button
-                      colorScheme={"brand"}
-                      mr={3}
-                      variant="ghost"
-                      isLoading={props.isSubmitting || loading}
-                      isDisabled={props.isSubmitting || loading}
-                      onClick={async () => {
-                        setLoading(true);
-                        try {
-                          await setUpUser();
-                          await router.push("/dashboard");
-                        } catch (err) {
-                          toast({
-                            position: "bottom-left",
-                            title: "Oops something went wrong!",
-                            status: "error",
-                            description: ` Please Try again ..:(`,
-                            duration: 5000,
-                            isClosable: true,
-                          });
-                        } finally {
-                          setLoading(false);
-                        }
-                      }}
-                    >
-                      Skip
-                    </Button>
-                    <Button
-                      colorScheme={"brand"}
-                      mr={3}
-                      isLoading={props.isSubmitting || loading}
-                      isDisabled={props.isSubmitting || loading}
-                      type="submit"
-                    >
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleSkip}
+                  disabled={isBusy}
+                  className="h-11 rounded-xl"
+                >
+                  {skipPending ? (
+                    <>
+                      <Spinner aria-hidden="true" />
+                      Skipping…
+                    </>
+                  ) : (
+                    "Skip"
+                  )}
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isBusy}
+                  className="h-11 rounded-xl bg-brand text-base font-semibold text-brand-foreground shadow-lg shadow-brand/20 hover:bg-brand/90"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Spinner aria-hidden="true" />
+                      Saving…
+                    </>
+                  ) : (
+                    <>
                       Next
-                    </Button>
-                  </Flex>
-                </Form>
-              )}
-            </Formik>
-          </Box>
-        </Stack>
-      </Flex>
-      <Footer />
-    </>
-  );
-};
+                      <ArrowRight className="size-4" aria-hidden="true" />
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </Form>
 
-export default OnBoarding;
+          <div className="flex items-start gap-2.5 rounded-2xl bg-muted/60 p-3.5">
+            <ShieldCheck
+              className="mt-0.5 size-4 shrink-0 text-brand"
+              aria-hidden="true"
+            />
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Your birthday is private and only used for your own reminders.
+              You can skip this step and add it later.
+            </p>
+          </div>
+        </div>
+      </AuthCard>
+    </AuthShell>
+  );
+}
