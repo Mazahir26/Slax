@@ -2,12 +2,14 @@ import type { ObjectId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 import type { eventData } from "../../components/types";
 import { methodNotAllowed, requireSession, sendError } from "../../lib/api";
+import { toDateKey } from "../../lib/dateOnly";
 import { getDb } from "../../lib/mongodb";
 
 type ReminderDocument = {
   _id: ObjectId;
   name: string;
-  date: Date;
+  /** New records store a date key; legacy records store a BSON Date. */
+  date: string | Date;
   user: string;
   color: string;
   isUser?: boolean;
@@ -62,15 +64,29 @@ export default async function handler(
 
     // Self-birthday reminders are private to onboarding/email flows and are
     // intentionally hidden from the dashboard list.
-    const result: eventData[] = rows
-      .filter((row) => row.isUser !== true)
-      .map((row) => ({
+    const result: eventData[] = [];
+    for (const row of rows) {
+      if (row.isUser === true) continue;
+
+      // Every API response uses the date-key model. Legacy BSON Dates are
+      // converted to their IST calendar date here so the client never has to
+      // deal with timestamps.
+      const date = toDateKey(row.date);
+      if (date === null) {
+        console.error(
+          `Skipping reminder ${row._id.toString()} with an invalid date.`
+        );
+        continue;
+      }
+
+      result.push({
         _id: row._id.toString(),
         name: row.name,
-        date: new Date(row.date).toISOString(),
+        date,
         user: row.user,
         color: row.color,
-      }));
+      });
+    }
 
     return res.status(200).json({ result, isNewUser });
   } catch (error) {

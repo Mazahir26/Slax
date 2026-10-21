@@ -25,7 +25,9 @@ export function signInEmailHtml({
   // Escape first, then insert zero-width spaces before dots for display. The
   // entities produced by escaping do not contain dots, so this order is safe.
   const escapedEmail = escapeHtml(email).replace(/\./g, "&#8203;.");
-  const escapedHost = escapeHtml(host).replace(/\./g, "&#8203;.");
+  // The host is only used inside the logo URL attribute, so it must stay a
+  // real hostname: zero-width separators would break the image request.
+  const escapedHost = escapeHtml(host);
   const escapedUrl = escapeHtml(url);
 
   return `<!doctype html>

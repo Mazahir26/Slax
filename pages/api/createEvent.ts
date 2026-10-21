@@ -50,6 +50,17 @@ function isDuplicateKeyError(error: unknown): boolean {
   );
 }
 
+/** Find the account's self-birthday, if any. */
+function findSelfBirthday(
+  reminders: Collection<rawEvent>,
+  email: string
+) {
+  return reminders.findOne(
+    { user: email, isUser: true },
+    { projection: { _id: 1 } }
+  );
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -78,34 +89,55 @@ export default async function handler(
   try {
     const reminders = (await getDb("Data")).collection<rawEvent>("reminders");
 
+    // Ordinary birthdays may always be created. Only an explicit self-birthday
+    // request can create a self-birthday.
+    if (!wantsSelfBirthday) {
+      const result = await reminders.insertOne({
+        date,
+        name,
+        user: email,
+        color,
+        isUser: false,
+      });
+      return res.status(201).json(result);
+    }
+
+    // Build the unique index only for self-birthday creation. Ordinary event
+    // creation must not fail because pre-existing duplicate birthdays block
+    // the index build (cleaning those up is a deployment prerequisite).
+    await ensureSelfBirthdayIndex(reminders);
+
     // Onboarding retries must be safe: return the existing self-birthday before
     // considering the current onboarding flag. This is true regardless of
     // whether `isNew` was already flipped to false by another request.
-    if (wantsSelfBirthday) {
-      // Build the unique index only for self-birthday creation. Ordinary event
-      // creation must not fail because pre-existing duplicate birthdays block
-      // the index build (cleaning those up is a deployment prerequisite).
-      await ensureSelfBirthdayIndex(reminders);
-
-      const existing = await reminders.findOne(
-        { user: email, isUser: true },
-        { projection: { _id: 1 } }
-      );
-      if (existing) {
-        return res
-          .status(201)
-          .json({ acknowledged: true, insertedId: existing._id });
-      }
+    const existing = await findSelfBirthday(reminders, email);
+    if (existing) {
+      return res
+        .status(201)
+        .json({ acknowledged: true, insertedId: existing._id });
     }
 
-    let isUser = false;
-    if (wantsSelfBirthday) {
-      const users = (await getDb("auth")).collection<OnboardingUser>("users");
-      const user = await users.findOne(
-        { email },
-        { projection: { _id: 1, isNew: 1 } }
-      );
-      isUser = user !== null && user.isNew !== false;
+    const users = (await getDb("auth")).collection<OnboardingUser>("users");
+    const user = await users.findOne(
+      { email },
+      { projection: { _id: 1, isNew: 1 } }
+    );
+    const onboardingCompleted = user !== null && user.isNew === false;
+
+    if (onboardingCompleted) {
+      // A concurrent request may have inserted the self-birthday after our
+      // first read but before the onboarding flag was observed. Recheck once
+      // so a delayed retry still succeeds idempotently...
+      const raced = await findSelfBirthday(reminders, email);
+      if (raced) {
+        return res
+          .status(201)
+          .json({ acknowledged: true, insertedId: raced._id });
+      }
+
+      // ...but never downgrade the request to an ordinary `isUser:false`
+      // birthday. Onboarding already finished without one, so refuse.
+      return sendError(res, 409, "Onboarding already completed");
     }
 
     try {
@@ -114,7 +146,7 @@ export default async function handler(
         name,
         user: email,
         color,
-        isUser,
+        isUser: true,
       });
 
       return res.status(201).json(result);
@@ -122,15 +154,12 @@ export default async function handler(
       // The unique partial index is the final arbiter. A concurrent request
       // that inserted the self-birthday first makes this a duplicate; treat it
       // as the same idempotent success shape.
-      if (isUser && isDuplicateKeyError(error)) {
-        const existing = await reminders.findOne(
-          { user: email, isUser: true },
-          { projection: { _id: 1 } }
-        );
-        if (existing) {
+      if (isDuplicateKeyError(error)) {
+        const winner = await findSelfBirthday(reminders, email);
+        if (winner) {
           return res
             .status(201)
-            .json({ acknowledged: true, insertedId: existing._id });
+            .json({ acknowledged: true, insertedId: winner._id });
         }
       }
       throw error;

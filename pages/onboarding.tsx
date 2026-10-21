@@ -37,7 +37,8 @@ import {
 import { addEvent, getUser } from "../lib/helperFunctions";
 
 // Raw form shape from the shared schema. The date stays a string while the
-// user types; zod transforms it to a Date before onSubmit sees it.
+// user types; zod validates it and normalises it to a YYYY-MM-DD date key
+// before onSubmit sees it.
 type OnboardingFormValues = z.input<typeof onboardingSchema>;
 
 async function markOnboardingComplete() {

@@ -10,7 +10,8 @@ export interface eventData {
 }
 export interface rawEvent {
   name: string;
-  date: Date;
+  /** New records store a `YYYY-MM-DD` date key; legacy BSON Dates are tolerated. */
+  date: string | Date;
   user: string;
   color: string;
   isUser?: boolean;

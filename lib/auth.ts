@@ -59,6 +59,8 @@ export const authOptions: NextAuthOptions = {
   providers: [
     EmailProvider({
       from: emailFrom,
+      // Keep this in sync with the "12 hours" copy on /verification.
+      maxAge: 12 * 60 * 60,
       async sendVerificationRequest({
         identifier: email,
         url,

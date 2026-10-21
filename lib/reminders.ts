@@ -1,7 +1,7 @@
 import moment from "moment-timezone";
+import { REMINDER_TIMEZONE, toDateKey } from "./dateOnly";
 
-/** Locked decision: every reminder calculation happens in India Standard Time. */
-export const REMINDER_TIMEZONE = "Asia/Kolkata";
+export { REMINDER_TIMEZONE };
 
 /** Number of calendar days after today included in the "upcoming" heads-up. */
 export const UPCOMING_WINDOW_DAYS = 3;
@@ -9,7 +9,10 @@ export const UPCOMING_WINDOW_DAYS = 3;
 /** Minimal shape the pure bucket builder needs from a stored reminder. */
 export interface ReminderEventInput {
   name: string;
-  /** Stored birthday; the year is irrelevant, only month/day are matched. */
+  /**
+   * Stored birthday: a `YYYY-MM-DD` date key, or a legacy BSON Date. The year
+   * is irrelevant; only month/day are matched.
+   */
   date: Date | string;
   /** Address the reminder is sent to. */
   user: string;
@@ -75,17 +78,18 @@ function twoDigits(value: number): string {
 /**
  * The month/day a stored birthday is observed on in a given year.
  *
+ * The key is already a civil date (`YYYY-MM-DD`), either stored directly or
+ * derived from a legacy BSON Date in `REMINDER_TIMEZONE`, so only the month and
+ * day are used here.
+ *
  * Locked policy: a Feb 29 birthday is observed on Feb 28 in non-leap years.
  * This keeps the reminder from silently disappearing for three years out of
  * four, and the same effective date is used for both ordinary reminders and
  * the account owner's own happy-birthday email.
  */
-function effectiveMonthDay(
-  parsed: moment.Moment,
-  isLeapYear: boolean
-): string {
-  const month = parsed.month() + 1;
-  let day = parsed.date();
+function effectiveMonthDay(dateKey: string, isLeapYear: boolean): string {
+  const month = Number(dateKey.slice(5, 7));
+  let day = Number(dateKey.slice(8, 10));
   if (month === 2 && day === 29 && !isLeapYear) {
     day = 28;
   }
@@ -96,11 +100,15 @@ function effectiveMonthDay(
  * Pure reminder matching. No database and no mail access, so it is trivially
  * testable with a fixed `now`.
  *
- * Matching is done on "MM-DD" keys built from the local day in
- * `REMINDER_TIMEZONE`, which makes month and year rollover
- * (Oct 30 -> Nov 1, Dec 30 -> Jan 1) fall out naturally. Stored dates are
- * normalised through `effectiveMonthDay` so the Feb 29 policy above applies
- * uniformly.
+ * Matching is done on "MM-DD" keys built from each stored date's civil date
+ * (`toDateKey`), while "today" is the current day in `REMINDER_TIMEZONE`. That
+ * makes month and year rollover (Oct 30 -> Nov 1, Dec 30 -> Jan 1) fall out
+ * naturally. Stored dates are normalised through `effectiveMonthDay` so the
+ * Feb 29 policy above applies uniformly.
+ *
+ * Important: a stored `YYYY-MM-DD` string is a civil date and is never shifted
+ * by a timezone conversion. Only legacy BSON `Date` values are treated as
+ * instants and converted to their IST calendar date.
  */
 export function buildReminderBuckets(
   events: ReminderEventInput[],
@@ -133,12 +141,10 @@ export function buildReminderBuckets(
     // mailer, where CR/LF or angle brackets could alter headers.
     if (!isSafeEmailRecipient(event.user)) continue;
 
-    const parsed = moment.utc(event.date);
-    if (!parsed.isValid()) continue;
+    const dateKey = toDateKey(event.date);
+    if (dateKey === null) continue;
 
-    const offset = offsetsByKey.get(
-      effectiveMonthDay(parsed.clone().tz(REMINDER_TIMEZONE), isLeapYear)
-    );
+    const offset = offsetsByKey.get(effectiveMonthDay(dateKey, isLeapYear));
     if (offset === undefined) continue;
 
     if (event.isUser === true) {

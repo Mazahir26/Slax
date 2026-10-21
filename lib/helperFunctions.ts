@@ -90,7 +90,9 @@ export async function addEvent(event: NewEventInput): Promise<event> {
       },
       body: JSON.stringify({
         name: event.name,
-        date: event.date.toISOString(),
+        // Birthdays are civil dates: send the user's selected calendar day,
+        // never a browser-local midnight instant.
+        date: event.date.format("YYYY-MM-DD"),
         color: event.color,
         isUser: event.isUser,
       }),
@@ -155,7 +157,7 @@ export async function editEvent(
         _id: event._id,
         name: event.name,
         color: event.color,
-        date: event.date.toISOString(),
+        date: event.date.format("YYYY-MM-DD"),
       }),
     });
     await assertStatus(response, 200);

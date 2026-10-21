@@ -12,6 +12,7 @@ Live demo: [slax.studio](https://slax.studio)
 - [Getting started](#getting-started)
 - [Environment variables](#environment-variables)
 - [Auth flow and data model](#auth-flow-and-data-model)
+- [Data notes / migration](#data-notes--migration)
 - [Reminder schedule and timezone](#reminder-schedule-and-timezone)
 - [Cron setup](#cron-setup)
 - [Deployment](#deployment)
@@ -77,14 +78,14 @@ Copy [`.env.example`](.env.example) to `.env.local` and fill in:
 | `EMAIL_SERVER_USER` | Yes | SMTP username and the `From:` address for sign-in and reminder emails. |
 | `EMAIL_SERVER_PASSWORD` | Yes | SMTP password or Gmail app password. |
 | `key` | Yes for reminders | Shared secret that authorizes the reminder cron request. |
-| `NEXT_PUBLIC_SITE_URL` | Optional | Canonical origin for sitemap URLs when `NEXTAUTH_URL` is not set; falls back to `https://slax.studio`. |
+| `NEXT_PUBLIC_SITE_URL` | Optional | Canonical origin used by `/robots.txt` and `/sitemap.xml`. Takes precedence over `NEXTAUTH_URL`; falls back to `https://slax.studio`. |
 
 `.env.local` and other local env files are git-ignored. Never commit real credentials.
 
 ## Auth flow and data model
 
 1. A visitor enters their email on `/signup`.
-2. NextAuth creates a verification token and emails a magic link through your SMTP account.
+2. NextAuth creates a verification token and emails a magic link through your SMTP account. The link is valid for **12 hours**.
 3. Following the link signs the user in and, on first use, sends them to onboarding to add their own birthday.
 4. Sessions use JWT cookies, so no session state is required on the server.
 
@@ -93,6 +94,48 @@ MongoDB collections:
 - `auth.users`, `auth.accounts`, `auth.verification_tokens` — managed by the NextAuth MongoDB adapter.
 - `auth.sessions` — not used for session state (sessions are JWTs in cookies); it is only touched as a best-effort cleanup when an account is deleted.
 - `Data.reminders` — birthday records (`name`, `date`, `user`, `isUser`).
+
+## Data notes / migration
+
+- Birthdays are stored in `Data.reminders`. Legacy records written as a BSON `Date` are still read correctly and are interpreted in **Asia/Kolkata**. New records are stored as date-only strings in `YYYY-MM-DD` form.
+- **Self-birthday index:** before the unique partial index on `{ user: 1 }` where `isUser: true` can be built, remove any duplicate legacy self-birthday rows for the same user. Run this once against the `Data` database in `mongosh`:
+
+  ```js
+  db.reminders
+    .aggregate([
+      { $match: { isUser: true } },
+      { $group: { _id: "$user", ids: { $push: "$_id" }, count: { $sum: 1 } } },
+      { $match: { count: { $gt: 1 } } },
+    ])
+    .forEach(({ ids }) => {
+      // Keep the newest row (highest ObjectId) for each user.
+      ids.sort((a, b) => b.toString().localeCompare(a.toString()));
+      db.reminders.deleteMany({ _id: { $in: ids.slice(1) } });
+    });
+  ```
+
+  The app creates the index automatically on the next self-birthday write, or you can create it explicitly:
+
+  ```js
+  db.reminders.createIndex(
+    { user: 1 },
+    {
+      unique: true,
+      partialFilterExpression: { isUser: true },
+      name: "unique_user_self_birthday",
+    }
+  );
+  ```
+
+- **Concurrent first sign-ins:** the MongoDB adapter does not create a unique index on `auth.users.email`. Add one to prevent two concurrent first sign-ins from creating duplicate users (resolve any existing duplicates first):
+
+  ```js
+  // In the `auth` database.
+  db.users.createIndex(
+    { email: 1 },
+    { unique: true, name: "unique_user_email" }
+  );
+  ```
 
 ## Reminder schedule and timezone
 
@@ -128,6 +171,12 @@ Notes:
 
 Any platform that can run `npm run build` and `npm run start` also works. No Postgres database or other service is required.
 
+`/robots.txt` and `/sitemap.xml` are generated at request time and always use the canonical origin: `NEXT_PUBLIC_SITE_URL`, then `NEXTAUTH_URL`, then `https://slax.studio`. In production the request `Host` header never changes those URLs.
+
+### Dependency audit
+
+`npm audit --omit=dev` reports **0 vulnerabilities** in production dependencies. A full `npm audit` currently flags advisories in the dev-only `eslint-config-next` → `micromatch` → `braces` chain. They are not shipped at runtime, and the suggested fix downgrades `eslint-config-next` to a breaking older major, so it is intentionally left until Next.js updates the dependency.
+
 ## Scripts
 
 | Command | Description |
@@ -136,7 +185,7 @@ Any platform that can run `npm run build` and `npm run start` also works. No Pos
 | `npm run build` | Create a production build. |
 | `npm run start` | Serve the production build. |
 | `npm run lint` | Run ESLint. |
-| `npm run typecheck` | Run TypeScript without emitting files. |
+| `npm run typecheck` | Generate Next.js route types, then run TypeScript without emitting files. |
 
 ## Found a bug
 
