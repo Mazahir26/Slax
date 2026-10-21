@@ -1,65 +1,88 @@
-import moment from "moment";
+import type { Collection, ObjectId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
-import { getSession } from "next-auth/react";
-import { rawEvent } from "../../components/types";
-import client from "../../lib/mongodb";
+import type { rawEvent } from "../../components/types";
+import { methodNotAllowed, requireSession, sendError } from "../../lib/api";
+import { getDb } from "../../lib/mongodb";
+import { createEventSchema } from "../../lib/validation";
+
+type OnboardingUser = {
+  _id: ObjectId;
+  email: string;
+  isNew?: boolean;
+};
+
+/**
+ * Decide whether this reminder may be stored as the user's own birthday.
+ *
+ * Client input is never trusted for `isUser`. It is only honoured while the
+ * account is still onboarding (`auth.users.isNew !== false`) and the user does
+ * not already have a self-birthday reminder. This keeps the onboarding
+ * self-birthday email working without letting a client mark arbitrary events
+ * as "self" at any later point.
+ */
+async function canStoreSelfBirthday(
+  email: string,
+  reminders: Collection<rawEvent>
+): Promise<boolean> {
+  const users = (await getDb("auth")).collection<OnboardingUser>("users");
+  const user = await users.findOne(
+    { email },
+    { projection: { _id: 1, isNew: 1 } }
+  );
+
+  if (!user || user.isNew === false) return false;
+
+  const existing = await reminders.findOne(
+    { user: email, isUser: true },
+    { projection: { _id: 1 } }
+  );
+
+  return existing === null;
+}
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const cookie = req.headers.cookie;
-  const session = cookie
-    ? await getSession({ req: { headers: { cookie } } as any })
-    : null;
-  if (!session) {
-    return res.status(401).send({
-      msg: "You need to be authenticated",
-      code: 401,
-    });
+  if (req.method !== "POST") {
+    return methodNotAllowed(res, req.method, ["POST"]);
   }
-  if (!session?.user?.email)
-    return res.status(401).send({
-      msg: "Invalid Token",
-      code: 401,
-    });
-  if (req.method === "POST") {
-    if (!req.body.name || !req.body.date || !req.body.color) {
-      return res.status(400).json({
-        msg: "Bad Request",
-        code: 400,
-      });
-    }
-    try {
-      const cli = await client;
-      const database = cli.db("Data");
-      const reminders = database.collection<rawEvent>("reminders");
-      if (!session?.user?.email)
-        return res.status(401).json({
-          msg: "You need to be authenticated",
-          code: 401,
-        });
 
-      const result = await reminders.insertOne({
-        date: new Date(moment(req.body.date).toISOString()),
-        name: req.body.name,
-        user: session?.user?.email,
-        color: req.body.color,
-        isUser: req.body.isUser,
-      });
-      return res.status(201).json(result);
-    } catch (e) {
-      console.log(e);
+  const session = await requireSession(req, res);
+  if (!session) return;
 
-      return res.status(500).json({
-        msg: "Oops something went wrong",
-        code: 500,
-      });
-    }
-  } else {
-    return res.status(400).json({
-      msg: "Get is not allowed in this Api route",
-      code: 400,
+  const parsed = createEventSchema.strict().safeParse(req.body);
+  if (!parsed.success) {
+    return sendError(
+      res,
+      400,
+      "Invalid request body",
+      parsed.error.flatten()
+    );
+  }
+
+  const email = session.user.email;
+  const { name, date, color } = parsed.data;
+
+  try {
+    const reminders = (await getDb("Data")).collection<rawEvent>("reminders");
+
+    const isUser =
+      parsed.data.isUser === true
+        ? await canStoreSelfBirthday(email, reminders)
+        : false;
+
+    const result = await reminders.insertOne({
+      date,
+      name,
+      user: email,
+      color,
+      isUser,
     });
+
+    return res.status(201).json(result);
+  } catch (error) {
+    console.error("Failed to create reminder.", error);
+    return sendError(res, 500, "Oops something went wrong");
   }
 }

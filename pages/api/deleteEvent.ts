@@ -1,55 +1,52 @@
-import { MongoClient, ObjectId } from "mongodb";
+import { ObjectId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
-import { getSession } from "next-auth/react";
-import { rawEvent } from "../../components/types";
-import client from "../../lib/mongodb";
+import type { rawEvent } from "../../components/types";
+import { methodNotAllowed, requireSession, sendError } from "../../lib/api";
+import { getDb } from "../../lib/mongodb";
+import { deleteEventSchema } from "../../lib/validation";
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const cookie = req.headers.cookie;
-  const session = cookie
-    ? await getSession({ req: { headers: { cookie } } as any })
-    : null;
-  if (!session) {
-    return res.status(401).send({
-      msg: "You need to be authenticated",
-      code: 401,
-    });
+  if (req.method !== "POST") {
+    return methodNotAllowed(res, req.method, ["POST"]);
   }
-  if (!session?.user?.email)
-    return res.status(401).send({
-      msg: "Invalid Token",
-      code: 401,
-    });
-  if (req.method === "POST") {
-    if (!req.body._id) {
-      return res.status(400).json({
-        msg: "Bad Request",
-        code: 400,
-      });
-    }
-    try {
-      const cli = await client;
-      const database = cli.db("Data");
-      const reminders = database.collection<rawEvent>("reminders");
-      const result = await reminders.deleteOne({
-        _id: new ObjectId(req.body._id),
-      });
-      return res.status(200).json(result);
-    } catch (e) {
-      console.log(e);
 
-      return res.status(500).json({
-        msg: "Oops something went wrong",
-        code: 500,
-      });
-    }
-  } else {
-    return res.status(400).json({
-      msg: "Get is not allowed in this Api route",
-      code: 400,
+  const session = await requireSession(req, res);
+  if (!session) return;
+
+  const parsed = deleteEventSchema.strict().safeParse(req.body);
+  if (!parsed.success) {
+    return sendError(
+      res,
+      400,
+      "Invalid request body",
+      parsed.error.flatten()
+    );
+  }
+
+  try {
+    const reminders = (await getDb("Data")).collection<rawEvent>("reminders");
+
+    // Owning user is part of the filter, so another user's reminder is never
+    // deleted and looks exactly like a missing one (404).
+    const result = await reminders.deleteOne({
+      _id: new ObjectId(parsed.data._id),
+      user: session.user.email,
     });
+
+    if (!result.acknowledged) {
+      throw new Error("Delete was not acknowledged.");
+    }
+
+    if (result.deletedCount === 0) {
+      return sendError(res, 404, "Birthday not found");
+    }
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Failed to delete reminder.", error);
+    return sendError(res, 500, "Oops something went wrong");
   }
 }

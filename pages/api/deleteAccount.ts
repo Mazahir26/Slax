@@ -1,59 +1,72 @@
+import type { ObjectId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
-import { getSession } from "next-auth/react";
-import { rawEvent } from "../../components/types";
-import client from "../../lib/mongodb";
+import type { rawEvent } from "../../components/types";
+import { methodNotAllowed, requireSession, sendError } from "../../lib/api";
+import { getDb } from "../../lib/mongodb";
+
+type AuthUser = {
+  _id: ObjectId;
+  email: string;
+};
+
+function assertAcknowledged(result: { acknowledged: boolean }) {
+  if (!result.acknowledged) {
+    throw new Error("Database delete was not acknowledged.");
+  }
+}
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const cookie = req.headers.cookie;
-  const session = cookie
-    ? await getSession({ req: { headers: { cookie } } as any })
-    : null;
-  if (!session) {
-    return res.status(401).send({
-      msg: "You need to be authenticated",
-      code: 401,
-    });
+  if (req.method !== "POST") {
+    return methodNotAllowed(res, req.method, ["POST"]);
   }
-  if (!session?.user?.email)
-    return res.status(401).send({
-      msg: "Invalid Token",
-      code: 401,
-    });
-  if (req.method === "POST") {
-    try {
-      const cli = await client;
-      const database = cli.db("Data");
-      const reminders = database.collection<rawEvent>("reminders");
-      if (!session?.user?.email)
-        return res.status(401).json({
-          msg: "You need to be authenticated",
-          code: 401,
-        });
-      const result = await reminders.deleteMany({ user: session.user.email });
-      if (result.acknowledged) {
-        const database2 = cli.db("auth");
-        const users = database2.collection("users");
-        const result2 = await users.deleteMany({ email: session.user.email });
 
-        return res.status(201).json(result2);
-      } else {
-        throw Error("Not acknowledged");
-      }
-    } catch (e) {
-      console.log(e);
+  const session = await requireSession(req, res);
+  if (!session) return;
 
-      return res.status(500).json({
-        msg: "Oops something went wrong",
-        code: 500,
-      });
+  const email = session.user.email;
+
+  try {
+    const dataDb = await getDb("Data");
+    const authDb = await getDb("auth");
+    const users = authDb.collection<AuthUser>("users");
+
+    // The NextAuth adapter stores `accounts`/`sessions` by the user's ObjectId,
+    // so resolve it before removing anything.
+    const user = await users.findOne(
+      { email },
+      { projection: { _id: 1 } }
+    );
+
+    assertAcknowledged(
+      await dataDb.collection<rawEvent>("reminders").deleteMany({ user: email })
+    );
+
+    if (user) {
+      assertAcknowledged(
+        await authDb.collection("accounts").deleteMany({ userId: user._id })
+      );
+      assertAcknowledged(
+        await authDb.collection("sessions").deleteMany({ userId: user._id })
+      );
     }
-  } else {
-    return res.status(400).json({
-      msg: "Get is not allowed in this Api route",
-      code: 400,
-    });
+
+    assertAcknowledged(
+      await authDb
+        .collection("verification_tokens")
+        .deleteMany({ identifier: email })
+    );
+
+    // If the user document was already gone we still cleaned up reminders and
+    // tokens above and report success with deletedCount: 0.
+    const result = await users.deleteMany({ email });
+    assertAcknowledged(result);
+
+    return res.status(201).json(result);
+  } catch (error) {
+    console.error("Failed to delete account.", error);
+    return sendError(res, 500, "Oops something went wrong");
   }
 }
