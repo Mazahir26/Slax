@@ -2,10 +2,13 @@ import { timingSafeEqual } from "crypto";
 import moment from "moment-timezone";
 import type { NextApiRequest, NextApiResponse } from "next";
 import nodemailer from "nodemailer";
+import type { SendMailOptions } from "nodemailer";
 import { getDb } from "../../lib/mongodb";
 import {
   buildReminderBuckets,
+  isSafeEmailRecipient,
   REMINDER_TIMEZONE,
+  sanitizeHeaderValue,
   type ReminderEventInput,
 } from "../../lib/reminders";
 import {
@@ -77,7 +80,8 @@ function toReminderEvents(documents: ReminderDocument[]): ReminderEventInput[] {
   const events: ReminderEventInput[] = [];
   for (const doc of documents) {
     if (typeof doc.name !== "string" || doc.name.length === 0) continue;
-    if (typeof doc.user !== "string" || doc.user.length === 0) continue;
+    // Skip malformed stored addresses rather than handing them to the mailer.
+    if (!isSafeEmailRecipient(doc.user)) continue;
     const date = doc.date;
     if (!(date instanceof Date) && typeof date !== "string") continue;
     events.push({
@@ -195,25 +199,32 @@ export default async function handler(
 
     // Doing the work inside a promise turns a synchronous nodemailer throw
     // (bad header, missing recipient) into a rejection for allSettled.
-    const send = (options: nodemailer.SendMailOptions) =>
+    const send = (options: SendMailOptions) =>
       Promise.resolve().then(() => transporter.sendMail(options));
 
-    const reminderSends = reminders.map((mail) =>
-      send({
-        to: mail.user,
-        from,
-        subject: "Birthday Reminder from Slax",
-        html: reminderEmailHtml(mail.upcoming, mail.today, mail.user),
-      })
-    );
-    const birthdaySends = selfBirthdays.map((birthday) =>
-      send({
-        to: birthday.user,
-        from,
-        subject: `Happy Birthday ${birthday.userName}`,
-        html: happyBirthdayEmailHtml(birthday.userName),
-      })
-    );
+    const reminderSends = reminders
+      .filter((mail) => isSafeEmailRecipient(mail.user))
+      .map((mail) =>
+        send({
+          to: mail.user,
+          from,
+          subject: "Birthday Reminder from Slax",
+          html: reminderEmailHtml(mail.upcoming, mail.today, mail.user),
+        })
+      );
+    const birthdaySends = selfBirthdays
+      .filter((birthday) => isSafeEmailRecipient(birthday.user))
+      .map((birthday) => {
+        // Never interpolate raw stored text into a header: strip CR/LF and
+        // other control characters before building the subject line.
+        const safeName = sanitizeHeaderValue(birthday.userName);
+        return send({
+          to: birthday.user,
+          from,
+          subject: safeName ? `Happy Birthday ${safeName}` : "Happy Birthday",
+          html: happyBirthdayEmailHtml(birthday.userName),
+        });
+      });
 
     // One failing address must not abort the whole batch.
     const results = await Promise.allSettled([

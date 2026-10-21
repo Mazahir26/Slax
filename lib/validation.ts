@@ -9,12 +9,18 @@ export const emailSchema = z
   .toLowerCase()
   .pipe(z.email("Please enter a valid email address."));
 
-/** Trimmed event name between 1 and 80 characters. */
+/** Matches ASCII control characters (including CR/LF) and DEL. */
+const CONTROL_CHARACTER_PATTERN = /[\u0000-\u001f\u007f]/;
+
+/** Trimmed event name between 1 and 80 characters without control characters. */
 export const eventNameSchema = z
   .string()
   .trim()
   .min(1, "Event name is required.")
-  .max(80, "Event name must be 80 characters or fewer.");
+  .max(80, "Event name must be 80 characters or fewer.")
+  .refine((value) => !CONTROL_CHARACTER_PATTERN.test(value), {
+    message: "Event name must not contain control characters.",
+  });
 
 const DATE_ONLY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 const ISO_DATETIME_PATTERN =

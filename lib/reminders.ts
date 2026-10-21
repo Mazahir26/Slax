@@ -41,6 +41,33 @@ function compareNames(a: string, b: string): number {
   return a.localeCompare(b, "en", { sensitivity: "base" });
 }
 
+/**
+ * Basic recipient sanity check for values stored in the database.
+ *
+ * Rejects whitespace/control characters (including CR/LF) and angle brackets
+ * so a stored address can never smuggle extra mail headers or a display name
+ * into the `To:` field. Requires exactly one `@` with a non-empty local part
+ * and domain. This intentionally does not try to be a full RFC 5322 parser.
+ */
+export function isSafeEmailRecipient(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  if (/[\u0000-\u001f\u007f]/.test(value)) return false;
+  if (value.includes("<") || value.includes(">")) return false;
+  if (!/^[^\s@<>]+@[^\s@<>]+$/.test(value)) return false;
+  return value.indexOf("@") === value.lastIndexOf("@");
+}
+
+/**
+ * Strip control characters (including CR/LF), trim, and cap the length of a
+ * value before it is interpolated into a mail header such as `Subject:`.
+ */
+export function sanitizeHeaderValue(value: string, maxLength = 80): string {
+  return value
+    .replace(/[\u0000-\u001f\u007f]/g, "")
+    .trim()
+    .slice(0, maxLength);
+}
+
 function twoDigits(value: number): string {
   return value < 10 ? `0${value}` : `${value}`;
 }
@@ -102,7 +129,9 @@ export function buildReminderBuckets(
   for (const event of events) {
     if (!event) continue;
     if (typeof event.name !== "string" || event.name.length === 0) continue;
-    if (typeof event.user !== "string" || event.user.length === 0) continue;
+    // Malformed stored addresses are skipped instead of being handed to the
+    // mailer, where CR/LF or angle brackets could alter headers.
+    if (!isSafeEmailRecipient(event.user)) continue;
 
     const parsed = moment.utc(event.date);
     if (!parsed.isValid()) continue;
