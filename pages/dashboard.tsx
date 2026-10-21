@@ -200,7 +200,7 @@ const Dashboard: NextPage = () => {
           <title>dashboard | Slax </title>
         </Head>
         <div
-          className="flex min-h-[calc(100dvh-4rem)] items-center justify-center gap-3 px-6 text-muted-foreground"
+          className="flex min-h-[calc(100dvh-4rem)] animate-in items-center justify-center gap-3 px-6 text-muted-foreground duration-300 fade-in motion-reduce:animate-none"
           role="status"
           aria-live="polite"
         >
@@ -240,7 +240,7 @@ const Dashboard: NextPage = () => {
           setCurrentYear={setCurrentYear}
         />
 
-        <main className="mx-auto w-full max-w-6xl px-3 pt-5 pb-10 sm:px-6 sm:pt-6">
+        <main className="mx-auto w-full max-w-6xl animate-in px-3 pt-5 pb-10 fade-in duration-300 motion-reduce:animate-none sm:px-6 sm:pt-6">
           <Calender
             onClickAddBirthday={() => setIsAddOpen(true)}
             view={view}

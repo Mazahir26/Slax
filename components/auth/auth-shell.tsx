@@ -56,7 +56,7 @@ export function AuthShell({ title, description, children }: AuthShellProps) {
           </div>
 
           <div className="relative grid w-full max-w-5xl items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] lg:gap-14">
-            <aside className="relative hidden min-h-[34rem] flex-col justify-between overflow-hidden rounded-[2rem] bg-playful-gradient p-10 text-white shadow-2xl shadow-brand/20 lg:flex">
+            <aside className="relative hidden min-h-[34rem] animate-in flex-col justify-between overflow-hidden rounded-[2rem] bg-playful-gradient p-10 text-white shadow-2xl shadow-brand/20 duration-500 fade-in motion-reduce:animate-none lg:flex">
               <div
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-0 opacity-40"
@@ -74,12 +74,16 @@ export function AuthShell({ title, description, children }: AuthShellProps) {
                 aria-hidden="true"
                 className="pointer-events-none absolute -bottom-20 left-8 size-64 rounded-full bg-white/10 blur-2xl"
               />
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 bg-black/10"
+              />
 
               <Link
                 href="/"
-                className="relative inline-flex w-fit items-center gap-3 rounded-2xl focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-white/60"
+                className="group relative inline-flex w-fit items-center gap-3 rounded-2xl focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-white/60"
               >
-                <span className="grid size-11 place-items-center rounded-2xl bg-white/15 ring-1 ring-white/25 backdrop-blur-sm">
+                <span className="grid size-11 place-items-center rounded-2xl bg-white/15 ring-1 ring-white/25 backdrop-blur-sm transition-transform duration-200 group-hover:scale-105 motion-reduce:transform-none motion-reduce:scale-none">
                   <CalendarHeart className="size-6" aria-hidden="true" />
                 </span>
                 <span className="text-2xl font-bold tracking-tight">Slax</span>
@@ -93,7 +97,7 @@ export function AuthShell({ title, description, children }: AuthShellProps) {
                 <h2 className="max-w-sm text-4xl font-bold leading-[1.1] tracking-tight">
                   Never miss a birthday again.
                 </h2>
-                <p className="max-w-sm text-sm leading-relaxed text-white/80 sm:text-base">
+                <p className="max-w-sm text-sm leading-relaxed text-white sm:text-base">
                   Slax keeps track of the dates your people care about, then
                   reminds you at exactly the right moment.
                 </p>
@@ -107,7 +111,7 @@ export function AuthShell({ title, description, children }: AuthShellProps) {
                         <span className="block text-sm font-semibold">
                           {itemTitle}
                         </span>
-                        <span className="block text-sm text-white/70">
+                        <span className="block text-sm text-white">
                           {copy}
                         </span>
                       </span>
@@ -116,7 +120,7 @@ export function AuthShell({ title, description, children }: AuthShellProps) {
                 </ul>
               </div>
 
-              <p className="relative text-sm text-white/70">
+              <p className="relative text-sm text-white">
                 Free to use. Private by default. Made with care.
               </p>
             </aside>
@@ -139,7 +143,7 @@ export function AuthCard({
   return (
     <div
       className={cn(
-        "rounded-3xl border bg-card p-6 text-card-foreground shadow-xl shadow-brand/5 sm:p-8",
+        "animate-in rounded-3xl border bg-card p-6 text-card-foreground shadow-xl shadow-brand/5 fade-in slide-in-from-bottom-2 duration-500 motion-reduce:animate-none sm:p-8",
         className
       )}
       {...props}

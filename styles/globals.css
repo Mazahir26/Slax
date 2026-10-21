@@ -50,7 +50,7 @@
   --card-foreground: oklch(0.2275 0.0139 272.7);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.2275 0.0139 272.7);
-  --primary: oklch(0.6815 0.1545 253.52);
+  --primary: oklch(0.52 0.17 253);
   --primary-foreground: oklch(0.99 0 0);
   --secondary: oklch(0.9653 0.0102 81.8);
   --secondary-foreground: oklch(0.2725 0.015 272.7);
@@ -62,12 +62,20 @@
   --destructive-foreground: oklch(0.99 0 0);
   --border: oklch(0.9 0.008 260);
   --input: oklch(0.9 0.008 260);
-  --ring: oklch(0.6815 0.1545 253.52);
+  --ring: oklch(0.52 0.17 253);
 
-  --brand: oklch(0.6815 0.1545 253.52);
+  --brand: oklch(0.52 0.17 253);
   --brand-foreground: oklch(0.99 0 0);
-  --accent-pink: oklch(0.7062 0.1694 351.08);
+  --accent-pink: oklch(0.56 0.19 351.08);
   --accent-pink-foreground: oklch(0.99 0 0);
+
+  /*
+   * Fixed deep gradient stops. Playful surfaces always carry white text, so
+   * these must stay dark in both themes instead of following --brand (which
+   * becomes a light blue in the dark theme).
+   */
+  --gradient-from: oklch(0.46 0.14 253);
+  --gradient-to: oklch(0.52 0.2 358);
 }
 
 .dark {
@@ -121,8 +129,8 @@
   .bg-playful-gradient {
     background-image: linear-gradient(
       135deg,
-      var(--brand) 0%,
-      var(--accent-pink) 100%
+      var(--gradient-from) 0%,
+      var(--gradient-to) 100%
     );
   }
 
@@ -135,5 +143,21 @@
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+  }
+}
+
+/* Respect the OS "reduce motion" setting for every transition and animation. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

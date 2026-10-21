@@ -257,7 +257,7 @@ export default function OnboardingPage() {
           </div>
 
           <div className="space-y-3">
-            <div className="grid size-12 place-items-center rounded-2xl bg-playful-gradient text-white shadow-lg shadow-brand/20">
+            <div className="grid size-12 animate-in place-items-center rounded-2xl bg-playful-gradient text-white shadow-lg shadow-brand/20 zoom-in-95 duration-300 fade-in motion-reduce:animate-none">
               <Cake className="size-6" aria-hidden="true" />
             </div>
             <div className="space-y-2">

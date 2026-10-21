@@ -55,30 +55,30 @@ const Home: NextPage = () => {
           <div className="mx-auto max-w-3xl text-center">
             <Badge
               variant="outline"
-              className="gap-1.5 rounded-full border-brand/30 bg-brand/5 px-3 py-1.5 text-xs font-medium text-brand"
+              className="animate-in gap-1.5 rounded-full border-brand/30 bg-brand/5 px-3 py-1.5 text-xs font-medium text-brand fade-in slide-in-from-bottom-2 duration-500 motion-reduce:animate-none"
             >
               <Sparkles className="size-3.5" aria-hidden="true" />
               Birthday reminders, on autopilot
             </Badge>
 
-            <h1 className="mt-6 text-balance text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
+            <h1 className="mt-6 animate-in text-balance text-4xl font-bold tracking-tight fade-in slide-in-from-bottom-2 duration-500 delay-75 fill-mode-backwards motion-reduce:animate-none sm:text-5xl lg:text-6xl">
               Never forget birthdays{" "}
               <span className="text-playful-gradient">
                 of your loved ones.
               </span>
             </h1>
 
-            <p className="mx-auto mt-5 max-w-2xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
+            <p className="mx-auto mt-5 max-w-2xl animate-in text-pretty text-base leading-relaxed text-muted-foreground fade-in slide-in-from-bottom-2 duration-500 delay-100 fill-mode-backwards motion-reduce:animate-none sm:text-lg">
               Create an account, add the birthdays you care about and forget
               about it. We&apos;ll email you three days early, so you can focus
               on planning the surprise. 😉
             </p>
 
-            <div className="mt-9 flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
+            <div className="mt-9 flex animate-in flex-wrap items-center justify-center gap-x-3 gap-y-2 fade-in slide-in-from-bottom-2 duration-500 delay-150 fill-mode-backwards motion-reduce:animate-none">
               {status === "authenticated" ? (
                 <Button
                   size="lg"
-                  className="bg-brand text-brand-foreground hover:bg-brand/90 h-12 rounded-full px-7 text-base shadow-sm"
+                  className="bg-brand text-brand-foreground hover:bg-brand/90 h-12 rounded-full px-7 text-base shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md motion-reduce:transform-none motion-reduce:translate-none"
                   onClick={() => router.push("/dashboard")}
                 >
                   Go to Dashboard
@@ -89,7 +89,7 @@ const Home: NextPage = () => {
                   <div className="flex items-center gap-1.5">
                     <Button
                       size="lg"
-                      className="bg-brand text-brand-foreground hover:bg-brand/90 h-12 rounded-full px-7 text-base shadow-sm"
+                      className="bg-brand text-brand-foreground hover:bg-brand/90 h-12 rounded-full px-7 text-base shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md motion-reduce:transform-none motion-reduce:translate-none"
                       onClick={() => signIn()}
                     >
                       Create an account
@@ -138,13 +138,13 @@ const Home: NextPage = () => {
               )}
             </div>
 
-            <ul className="mx-auto mt-14 grid max-w-4xl gap-4 text-left sm:mt-16 sm:grid-cols-3">
+            <ul className="mx-auto mt-14 grid max-w-4xl animate-in gap-4 text-left fade-in slide-in-from-bottom-2 duration-500 delay-200 fill-mode-backwards motion-reduce:animate-none sm:mt-16 sm:grid-cols-3">
               {features.map(({ title, description, Icon }) => (
                 <li
                   key={title}
-                  className="flex items-start gap-3 rounded-2xl border border-border/70 bg-card/70 p-5 shadow-sm backdrop-blur"
+                  className="group flex items-start gap-3 rounded-2xl border border-border/70 bg-card/70 p-5 shadow-sm backdrop-blur transition-all duration-200 hover:-translate-y-1 hover:shadow-md motion-reduce:transform-none motion-reduce:translate-none"
                 >
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand transition-transform duration-200 group-hover:scale-110 motion-reduce:transform-none motion-reduce:scale-none">
                     <Icon className="size-5" aria-hidden="true" />
                   </span>
                   <div className="min-w-0">

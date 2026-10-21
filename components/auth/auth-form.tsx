@@ -147,7 +147,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="h-11 w-full rounded-xl bg-brand text-base font-semibold text-brand-foreground shadow-lg shadow-brand/20 transition-transform hover:bg-brand/90 focus-visible:ring-brand/40 active:scale-[0.99]"
+              className="h-11 w-full rounded-xl bg-brand text-base font-semibold text-brand-foreground shadow-lg shadow-brand/20 transition-all duration-200 hover:bg-brand/90 focus-visible:ring-brand/40 active:scale-[0.99] motion-reduce:transform-none motion-reduce:scale-none"
             >
               {isSubmitting ? (
                 <>
@@ -168,7 +168,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           {copy.prompt}{" "}
           <Link
             href={copy.linkHref}
-            className="inline-flex min-h-11 items-center rounded-md px-1 font-semibold text-brand underline-offset-4 hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+            className="inline-flex min-h-11 items-center rounded-md px-1 font-semibold text-brand underline-offset-4 transition-colors duration-200 hover:text-accent-foreground hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
           >
             {copy.linkLabel}
           </Link>

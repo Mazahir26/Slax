@@ -14,7 +14,7 @@ export default function NotFound() {
         <meta name="description" content="The page you were looking for could not be found." />
       </Head>
 
-      <section className="flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center px-4 py-16 text-center sm:px-6">
+      <section className="flex min-h-[calc(100dvh-4rem)] animate-in flex-col items-center justify-center px-4 py-16 text-center fade-in slide-in-from-bottom-2 duration-500 motion-reduce:animate-none sm:px-6">
         <Image
           src="/404.svg"
           alt="404 Not Found"

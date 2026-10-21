@@ -21,7 +21,7 @@ export default function ErrorPage() {
         />
       </Head>
 
-      <section className="flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center px-4 py-16 text-center sm:px-6">
+      <section className="flex min-h-[calc(100dvh-4rem)] animate-in flex-col items-center justify-center px-4 py-16 text-center fade-in slide-in-from-bottom-2 duration-500 motion-reduce:animate-none sm:px-6">
         <Image
           src="/warning.svg"
           alt="Something went wrong"

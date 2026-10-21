@@ -131,14 +131,14 @@ export default function TopBar({
             >
               <TabsTrigger
                 value="agenda"
-                className="h-11 gap-1.5 rounded-full px-4 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                className="h-11 gap-1.5 rounded-full px-4 transition-all duration-200 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
                 <List aria-hidden="true" />
                 Agenda
               </TabsTrigger>
               <TabsTrigger
                 value="month"
-                className="h-11 gap-1.5 rounded-full px-4 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                className="h-11 gap-1.5 rounded-full px-4 transition-all duration-200 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
                 <CalendarDays aria-hidden="true" />
                 Month

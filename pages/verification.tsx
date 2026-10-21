@@ -23,7 +23,7 @@ export default function VerificationPage() {
       description="Your Slax sign-in link is on its way. It stays valid for 12 hours."
     >
       <AuthCard className="text-center sm:p-10">
-        <div className="mx-auto grid size-16 place-items-center rounded-2xl bg-playful-gradient text-white shadow-lg shadow-brand/20">
+        <div className="mx-auto grid size-16 animate-in place-items-center rounded-2xl bg-playful-gradient text-white shadow-lg shadow-brand/20 zoom-in-95 duration-300 fade-in motion-reduce:animate-none">
           <MailCheck className="size-8" aria-hidden="true" />
         </div>
 

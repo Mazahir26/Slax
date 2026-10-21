@@ -83,7 +83,7 @@ export default function About() {
       </Head>
 
       <div className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
-        <header className="mx-auto max-w-2xl text-center">
+        <header className="mx-auto max-w-2xl animate-in text-center fade-in slide-in-from-bottom-2 duration-500 motion-reduce:animate-none">
           <p className="text-sm font-semibold tracking-wide text-brand uppercase">
             About Slax
           </p>
@@ -116,10 +116,10 @@ export default function About() {
             {features.map(({ title, description, Icon, accent }) => (
               <li
                 key={title}
-                className="flex flex-col rounded-2xl border border-border/70 bg-card p-6 shadow-sm transition-shadow hover:shadow-md"
+                className="group flex flex-col rounded-2xl border border-border/70 bg-card p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-brand/30 hover:shadow-md motion-reduce:transform-none motion-reduce:translate-none"
               >
                 <span
-                  className={`flex size-11 items-center justify-center rounded-xl ${accent}`}
+                  className={`flex size-11 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-110 motion-reduce:transform-none motion-reduce:scale-none ${accent}`}
                 >
                   <Icon className="size-5" aria-hidden="true" />
                 </span>
@@ -150,9 +150,9 @@ export default function About() {
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex h-full flex-col items-center gap-3 rounded-2xl border border-border/70 bg-card p-6 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                  className="group flex h-full flex-col items-center gap-3 rounded-2xl border border-border/70 bg-card p-6 text-center shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md motion-reduce:transform-none motion-reduce:translate-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
                 >
-                  <span className="flex size-14 items-center justify-center rounded-2xl bg-muted text-foreground transition-colors group-hover:bg-brand/10 group-hover:text-brand">
+                  <span className="flex size-14 items-center justify-center rounded-2xl bg-muted text-foreground transition-all duration-200 group-hover:scale-105 group-hover:bg-brand/10 group-hover:text-brand motion-reduce:transform-none motion-reduce:scale-none">
                     <Icon className="size-7" aria-hidden="true" />
                   </span>
                   <span className="font-semibold">{name}</span>

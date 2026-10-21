@@ -45,7 +45,7 @@ export default function SignOutPage() {
         <AuthCardSkeleton rows={1} />
       ) : status === "authenticated" ? (
         <AuthCard className="text-center">
-          <div className="mx-auto grid size-16 place-items-center rounded-2xl bg-destructive/10 text-destructive">
+          <div className="mx-auto grid size-16 animate-in place-items-center rounded-2xl bg-destructive/10 text-destructive zoom-in-95 duration-300 fade-in motion-reduce:animate-none">
             <LogOut className="size-8" aria-hidden="true" />
           </div>
 
@@ -91,7 +91,7 @@ export default function SignOutPage() {
         </AuthCard>
       ) : (
         <AuthCard className="text-center sm:p-10">
-          <div className="mx-auto grid size-16 place-items-center rounded-2xl bg-brand/10 text-brand">
+          <div className="mx-auto grid size-16 animate-in place-items-center rounded-2xl bg-brand/10 text-brand zoom-in-95 duration-300 fade-in motion-reduce:animate-none">
             <CheckCircle2 className="size-8" aria-hidden="true" />
           </div>
 
