@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://www.slax.studio/sitemap.xml
+Sitemap: https://slax.studio/sitemap.xml

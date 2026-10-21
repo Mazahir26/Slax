@@ -2,6 +2,9 @@ import type { GetServerSideProps } from "next";
 
 const FALLBACK_BASE_URL = "https://slax.studio";
 
+/** Loopback hostnames that are safe to trust while developing locally. */
+const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1"]);
+
 interface PublicRoute {
   path: string;
   changefreq: "daily" | "weekly" | "monthly";
@@ -38,12 +41,21 @@ function configuredBaseUrl(value: string | undefined): string | null {
   }
 }
 
-function hostBaseUrl(host: string | undefined): string | null {
+/**
+ * The `Host` header is attacker-controlled, so it may only influence canonical
+ * URLs during local development and only when it points at loopback. In
+ * production every request uses the configured origin or the fixed fallback.
+ */
+function localDevBaseUrl(host: string | undefined): string | null {
+  if (process.env.NODE_ENV === "production") return null;
+
   const trimmed = host?.trim();
   if (!trimmed) return null;
 
   try {
-    return new URL(`https://${trimmed}`).origin;
+    const url = new URL(`http://${trimmed}`);
+    if (!LOCAL_HOSTNAMES.has(url.hostname)) return null;
+    return url.origin;
   } catch {
     return null;
   }
@@ -53,7 +65,7 @@ function resolveBaseUrl(host: string | undefined): string {
   return (
     configuredBaseUrl(process.env.NEXTAUTH_URL) ??
     configuredBaseUrl(process.env.NEXT_PUBLIC_SITE_URL) ??
-    hostBaseUrl(host) ??
+    localDevBaseUrl(host) ??
     FALLBACK_BASE_URL
   );
 }

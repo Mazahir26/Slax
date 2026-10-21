@@ -2,7 +2,7 @@
 
 Slax is an open-source birthday reminder app. Add the birthdays you care about once, and Slax emails you before the big day so you never have to scramble for a gift or a plan again.
 
-Live demo: [www.slax.studio](https://www.slax.studio)
+Live demo: [slax.studio](https://slax.studio)
 
 ## Contents
 
@@ -73,11 +73,11 @@ Copy [`.env.example`](.env.example) to `.env.local` and fill in:
 | `NEXTAUTH_URL` | In production | Public base URL of the app. Optional for local development on `http://localhost:3000`; required in production. |
 | `NEXTAUTH_SECRET` | Yes in production | Random secret used to sign sessions and verification tokens (`openssl rand -base64 32`). |
 | `EMAIL_SERVER_HOST` | Yes | SMTP host, for example `smtp.gmail.com`. |
-| `EMAIL_SERVER_PORT` | Yes | SMTP port, for example `465`. |
+| `EMAIL_SERVER_PORT` | Yes | SMTP port, for example `465`. Port `465` uses implicit TLS; other ports negotiate STARTTLS. |
 | `EMAIL_SERVER_USER` | Yes | SMTP username and the `From:` address for sign-in and reminder emails. |
 | `EMAIL_SERVER_PASSWORD` | Yes | SMTP password or Gmail app password. |
 | `key` | Yes for reminders | Shared secret that authorizes the reminder cron request. |
-| `NEXT_PUBLIC_SITE_URL` | Optional | Used by the sitemap when `NEXTAUTH_URL` is not set. |
+| `NEXT_PUBLIC_SITE_URL` | Optional | Canonical origin for sitemap URLs when `NEXTAUTH_URL` is not set; falls back to `https://slax.studio`. |
 
 `.env.local` and other local env files are git-ignored. Never commit real credentials.
 
@@ -90,7 +90,8 @@ Copy [`.env.example`](.env.example) to `.env.local` and fill in:
 
 MongoDB collections:
 
-- `auth.users`, `auth.accounts`, `auth.sessions`, `auth.verification_tokens` — managed by the NextAuth MongoDB adapter.
+- `auth.users`, `auth.accounts`, `auth.verification_tokens` — managed by the NextAuth MongoDB adapter.
+- `auth.sessions` — not used for session state (sessions are JWTs in cookies); it is only touched as a best-effort cleanup when an account is deleted.
 - `Data.reminders` — birthday records (`name`, `date`, `user`, `isUser`).
 
 ## Reminder schedule and timezone

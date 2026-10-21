@@ -50,6 +50,29 @@ function resolveSender(user: string | undefined): string | undefined {
   return user;
 }
 
+/** Validated SMTP settings. Ports outside 1..65535 are never dialed. */
+interface MailConfig {
+  host: string;
+  port: number;
+  user: string;
+  password: string;
+}
+
+function resolveMailConfig(): MailConfig | null {
+  const host = process.env.EMAIL_SERVER_HOST?.trim();
+  const user = process.env.EMAIL_SERVER_USER?.trim();
+  const password = process.env.EMAIL_SERVER_PASSWORD;
+  const rawPort = process.env.EMAIL_SERVER_PORT?.trim();
+
+  if (!host || !user || !password || !rawPort) return null;
+  if (!/^\d+$/.test(rawPort)) return null;
+
+  const port = Number(rawPort);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) return null;
+
+  return { host, port, user, password };
+}
+
 function toReminderEvents(documents: ReminderDocument[]): ReminderEventInput[] {
   const events: ReminderEventInput[] = [];
   for (const doc of documents) {
@@ -137,11 +160,10 @@ export default async function handler(
       });
     }
 
-    const mailUser = process.env.EMAIL_SERVER_USER;
-    const mailPassword = process.env.EMAIL_SERVER_PASSWORD;
-    if (!mailUser || !mailPassword) {
+    const mail = resolveMailConfig();
+    if (!mail) {
       console.error(
-        "sendEmail: EMAIL_SERVER_USER or EMAIL_SERVER_PASSWORD is not configured"
+        "sendEmail: EMAIL_SERVER_HOST, EMAIL_SERVER_PORT, EMAIL_SERVER_USER and EMAIL_SERVER_PASSWORD must be configured and valid"
       );
       return res.status(500).json({
         msg: "Oops something went wrong",
@@ -149,7 +171,7 @@ export default async function handler(
       });
     }
 
-    const from = resolveSender(mailUser);
+    const from = resolveSender(mail.user);
     if (!from) {
       console.error("sendEmail: could not resolve a From address");
       return res.status(500).json({
@@ -158,11 +180,16 @@ export default async function handler(
       });
     }
 
+    // Port 465 uses implicit TLS; every other port negotiates STARTTLS.
+    const secure = mail.port === 465;
     const transporter = nodemailer.createTransport({
-      service: "Gmail",
+      host: mail.host,
+      port: mail.port,
+      secure,
+      requireTLS: !secure,
       auth: {
-        user: mailUser,
-        pass: mailPassword,
+        user: mail.user,
+        pass: mail.password,
       },
     });
 

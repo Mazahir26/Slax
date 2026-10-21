@@ -18,6 +18,12 @@
 # local env files
 .env
 .env*.local
+.env.development
+.env.production
+.env.test
+
+# certificates and private keys
+*.pem
 
 # never ignore the template
 !.env.example
