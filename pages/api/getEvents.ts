@@ -13,6 +13,12 @@ type ReminderDocument = {
   isUser?: boolean;
 };
 
+type UserDocument = {
+  _id: ObjectId;
+  email: string;
+  isNew?: boolean;
+};
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -28,6 +34,7 @@ export default async function handler(
     const reminders = (await getDb("Data")).collection<ReminderDocument>(
       "reminders"
     );
+    const users = (await getDb("auth")).collection<UserDocument>("users");
 
     const rows = await reminders
       .find(
@@ -45,9 +52,13 @@ export default async function handler(
       )
       .toArray();
 
-    // `isNewUser` means "has not stored their own birthday yet": it is true
-    // until a self-birthday (isUser) reminder exists for the account.
-    const isNewUser = !rows.some((row) => row.isUser === true);
+    // Same meaning as GET /api/newUser: the account is onboarding while
+    // `auth.users.isNew` is anything other than an explicit `false`.
+    const user = await users.findOne(
+      { email: session.user.email },
+      { projection: { _id: 1, isNew: 1 } }
+    );
+    const isNewUser = user?.isNew !== false;
 
     // Self-birthday reminders are private to onboarding/email flows and are
     // intentionally hidden from the dashboard list.

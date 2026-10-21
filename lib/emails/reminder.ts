@@ -9,6 +9,20 @@ function copyrightYear(): number {
   return new Date().getFullYear();
 }
 
+/**
+ * Escape user-provided text before interpolating it into the HTML bodies.
+ * Names come from the database, so a stored `<script>` (or an `&`, quote or
+ * apostrophe) must render as text rather than become markup.
+ */
+export function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export function reminderEmailHtml(
   upcoming: string[],
   birthdaysToday: string[],
@@ -16,6 +30,9 @@ export function reminderEmailHtml(
 ): string {
   const nameMatch = user.match(/^([^@]*)@/);
   const name = nameMatch ? nameMatch[1] : null;
+  // The greeting interpolates either the email-derived display name or the
+  // raw address; both are attacker-influenced, so escape the chosen value.
+  const displayName = escapeHtml(name ? name : user);
   return `<!doctype html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 
@@ -129,9 +146,7 @@ export function reminderEmailHtml(
                     </tr>
                     <tr>
                       <td align="center" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-                        <div style="font-family:Helvetica,Arial, sans-serif;font-size:24px;font-weight:bold;line-height:1;text-align:center;color:#000000;">Hey ${
-                          name ? name : user
-                        },</div>
+                        <div style="font-family:Helvetica,Arial, sans-serif;font-size:24px;font-weight:bold;line-height:1;text-align:center;color:#000000;">Hey ${displayName},</div>
                       </td>
                     </tr>
                   </tbody>
@@ -165,7 +180,9 @@ ${
                   ${birthdaysToday
                     .map(
                       (x) =>
-                        `<div style="font-family:Helvetica, sans-serif;font-size:15px;line-height:1;text-align:center;color:#000000;">${x}</div>`
+                        `<div style="font-family:Helvetica, sans-serif;font-size:15px;line-height:1;text-align:center;color:#000000;">${escapeHtml(
+                          x
+                        )}</div>`
                     )
                     .join("")}
                     
@@ -204,7 +221,9 @@ ${
                      ${upcoming
                        .map(
                          (x) =>
-                           `<div style="font-family:Helvetica, sans-serif;font-size:15px;line-height:1;text-align:center;color:#000000;">${x}</div>`
+                           `<div style="font-family:Helvetica, sans-serif;font-size:15px;line-height:1;text-align:center;color:#000000;">${escapeHtml(
+                             x
+                           )}</div>`
                        )
                        .join("")}
                      </td>
@@ -390,7 +409,9 @@ export function happyBirthdayEmailHtml(userName: string): string {
                     </tr>
                     <tr>
                       <td align="center" style="font-size:0px;padding:10px 25px;padding-top:80px;word-break:break-word;">
-                        <div style="font-family:helvetica;font-size:35px;line-height:1;text-align:center;color:#000000;">Happy Birthday ${userName}</div>
+                        <div style="font-family:helvetica;font-size:35px;line-height:1;text-align:center;color:#000000;">Happy Birthday ${escapeHtml(
+                          userName
+                        )}</div>
                       </td>
                     </tr>
                     <tr>

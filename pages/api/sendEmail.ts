@@ -2,7 +2,7 @@ import { timingSafeEqual } from "crypto";
 import moment from "moment-timezone";
 import type { NextApiRequest, NextApiResponse } from "next";
 import nodemailer from "nodemailer";
-import client from "../../lib/mongodb";
+import { getDb } from "../../lib/mongodb";
 import {
   buildReminderBuckets,
   REMINDER_TIMEZONE,
@@ -99,8 +99,9 @@ export default async function handler(
   }
 
   try {
-    const cli = await client;
-    const database = cli.db("Data");
+    // getDb() rejects cleanly when MONGODB_URI is missing or invalid instead of
+    // waiting forever on the adapter's never-settling default promise.
+    const database = await getDb("Data");
     const collection = database.collection<ReminderDocument>("reminders");
     const data = await collection
       .find(
@@ -125,14 +126,45 @@ export default async function handler(
       now
     );
 
+    // A quiet day needs no mail credentials at all: report a successful no-op
+    // so cron callers do not fail when there is simply nothing to send.
+    if (reminders.length === 0 && selfBirthdays.length === 0) {
+      return res.status(200).json({
+        msg: "Done",
+        noOfMails: 0,
+        UserBirthdays: 0,
+        failed: 0,
+      });
+    }
+
+    const mailUser = process.env.EMAIL_SERVER_USER;
+    const mailPassword = process.env.EMAIL_SERVER_PASSWORD;
+    if (!mailUser || !mailPassword) {
+      console.error(
+        "sendEmail: EMAIL_SERVER_USER or EMAIL_SERVER_PASSWORD is not configured"
+      );
+      return res.status(500).json({
+        msg: "Oops something went wrong",
+        code: 500,
+      });
+    }
+
+    const from = resolveSender(mailUser);
+    if (!from) {
+      console.error("sendEmail: could not resolve a From address");
+      return res.status(500).json({
+        msg: "Oops something went wrong",
+        code: 500,
+      });
+    }
+
     const transporter = nodemailer.createTransport({
       service: "Gmail",
       auth: {
-        user: process.env.EMAIL_SERVER_USER,
-        pass: process.env.EMAIL_SERVER_PASSWORD,
+        user: mailUser,
+        pass: mailPassword,
       },
     });
-    const from = resolveSender(process.env.EMAIL_SERVER_USER);
 
     // Doing the work inside a promise turns a synchronous nodemailer throw
     // (bad header, missing recipient) into a rejection for allSettled.
@@ -177,6 +209,17 @@ export default async function handler(
         userBirthdays += 1;
       }
     });
+
+    // Partial delivery is a failure for the caller: cron must retry/report
+    // rather than treat a run with rejected recipients as a success.
+    if (failed > 0) {
+      return res.status(502).json({
+        msg: "Some emails failed",
+        noOfMails,
+        UserBirthdays: userBirthdays,
+        failed,
+      });
+    }
 
     return res.status(200).json({
       msg: "Done",

@@ -1,4 +1,4 @@
-import type { ObjectId } from "mongodb";
+import { ObjectId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 import type { rawEvent } from "../../components/types";
 import { methodNotAllowed, requireSession, sendError } from "../../lib/api";
@@ -11,7 +11,7 @@ type AuthUser = {
 
 function assertAcknowledged(result: { acknowledged: boolean }) {
   if (!result.acknowledged) {
-    throw new Error("Database delete was not acknowledged.");
+    throw new Error("Database operation was not acknowledged.");
   }
 }
 
@@ -27,31 +27,42 @@ export default async function handler(
   if (!session) return;
 
   const email = session.user.email;
+  // The adapter stores `accounts`/`sessions` keyed by ObjectId. Fall back to
+  // the raw token value if an older/foreign token carries a non-ObjectId id.
+  const userId = ObjectId.isValid(session.user.id)
+    ? new ObjectId(session.user.id)
+    : session.user.id;
 
   try {
     const dataDb = await getDb("Data");
     const authDb = await getDb("auth");
     const users = authDb.collection<AuthUser>("users");
 
-    // The NextAuth adapter stores `accounts`/`sessions` by the user's ObjectId,
-    // so resolve it before removing anything.
-    const user = await users.findOne(
-      { email },
-      { projection: { _id: 1 } }
-    );
+    // Revoke outstanding tokens before removing the data. The account is then
+    // rejected by `requireSession` during the (very small) window before the
+    // user document is deleted.
+    const user = await users.findOne({ email }, { projection: { _id: 1 } });
+    if (user) {
+      assertAcknowledged(
+        await users.updateOne(
+          { _id: user._id },
+          { $set: { isDisabled: true }, $inc: { tokenVersion: 1 } }
+        )
+      );
+    }
 
     assertAcknowledged(
       await dataDb.collection<rawEvent>("reminders").deleteMany({ user: email })
     );
 
-    if (user) {
-      assertAcknowledged(
-        await authDb.collection("accounts").deleteMany({ userId: user._id })
-      );
-      assertAcknowledged(
-        await authDb.collection("sessions").deleteMany({ userId: user._id })
-      );
-    }
+    // Sessions/accounts are keyed by the stable user id from the JWT, so they
+    // are removed even when the user document has already gone missing.
+    assertAcknowledged(
+      await authDb.collection("accounts").deleteMany({ userId })
+    );
+    assertAcknowledged(
+      await authDb.collection("sessions").deleteMany({ userId })
+    );
 
     assertAcknowledged(
       await authDb
@@ -59,8 +70,8 @@ export default async function handler(
         .deleteMany({ identifier: email })
     );
 
-    // If the user document was already gone we still cleaned up reminders and
-    // tokens above and report success with deletedCount: 0.
+    // Remove the user document last: while it exists, `requireSession` still
+    // rejects the account because `isDisabled` is set.
     const result = await users.deleteMany({ email });
     assertAcknowledged(result);
 

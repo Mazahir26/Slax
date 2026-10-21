@@ -41,19 +41,46 @@ function compareNames(a: string, b: string): number {
   return a.localeCompare(b, "en", { sensitivity: "base" });
 }
 
+function twoDigits(value: number): string {
+  return value < 10 ? `0${value}` : `${value}`;
+}
+
+/**
+ * The month/day a stored birthday is observed on in a given year.
+ *
+ * Locked policy: a Feb 29 birthday is observed on Feb 28 in non-leap years.
+ * This keeps the reminder from silently disappearing for three years out of
+ * four, and the same effective date is used for both ordinary reminders and
+ * the account owner's own happy-birthday email.
+ */
+function effectiveMonthDay(
+  parsed: moment.Moment,
+  isLeapYear: boolean
+): string {
+  const month = parsed.month() + 1;
+  let day = parsed.date();
+  if (month === 2 && day === 29 && !isLeapYear) {
+    day = 28;
+  }
+  return `${twoDigits(month)}-${twoDigits(day)}`;
+}
+
 /**
  * Pure reminder matching. No database and no mail access, so it is trivially
  * testable with a fixed `now`.
  *
  * Matching is done on "MM-DD" keys built from the local day in
  * `REMINDER_TIMEZONE`, which makes month and year rollover
- * (Oct 30 -> Nov 1, Dec 30 -> Jan 1) fall out naturally.
+ * (Oct 30 -> Nov 1, Dec 30 -> Jan 1) fall out naturally. Stored dates are
+ * normalised through `effectiveMonthDay` so the Feb 29 policy above applies
+ * uniformly.
  */
 export function buildReminderBuckets(
   events: ReminderEventInput[],
   now: moment.MomentInput
 ): ReminderBuckets {
   const today = moment.tz(now, REMINDER_TIMEZONE).startOf("day");
+  const isLeapYear = today.isLeapYear();
 
   const offsetsByKey = new Map<string, number>();
   for (let offset = 0; offset <= UPCOMING_WINDOW_DAYS; offset += 1) {
@@ -81,7 +108,7 @@ export function buildReminderBuckets(
     if (!parsed.isValid()) continue;
 
     const offset = offsetsByKey.get(
-      parsed.clone().tz(REMINDER_TIMEZONE).format("MM-DD")
+      effectiveMonthDay(parsed.clone().tz(REMINDER_TIMEZONE), isLeapYear)
     );
     if (offset === undefined) continue;
 

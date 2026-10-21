@@ -19,14 +19,47 @@ function getMongoUri(): string | null {
   return uri;
 }
 
+function readCachedClientPromise(): Promise<MongoClient> | null {
+  return process.env.NODE_ENV === "development"
+    ? globalForMongo._mongoClientPromise ?? null
+    : productionClientPromise;
+}
+
+function writeCachedClientPromise(promise: Promise<MongoClient> | null) {
+  if (process.env.NODE_ENV === "development") {
+    globalForMongo._mongoClientPromise = promise ?? undefined;
+  } else {
+    productionClientPromise = promise;
+  }
+}
+
+/**
+ * Connect a new client. The returned promise rejects when the driver cannot
+ * connect, and a rejection handler is attached immediately so that a caller
+ * which forgets to await it cannot trigger an unhandled rejection.
+ */
 function connect(uri: string): Promise<MongoClient> {
+  let client: MongoClient;
   try {
-    const client = new MongoClient(uri);
-    return client.connect();
+    client = new MongoClient(uri);
   } catch (error: unknown) {
     const detail = error instanceof Error ? ` ${error.message}` : "";
-    throw new Error(`${MISSING_URI_MESSAGE}${detail}`);
+    return Promise.reject(new Error(`${MISSING_URI_MESSAGE}${detail}`));
   }
+
+  let promise: Promise<MongoClient>;
+  try {
+    promise = client.connect();
+  } catch (error: unknown) {
+    const detail = error instanceof Error ? ` ${error.message}` : "";
+    return Promise.reject(new Error(`${MISSING_URI_MESSAGE}${detail}`));
+  }
+
+  promise.catch((error: unknown) => {
+    console.error("Could not connect to MongoDB.", error);
+  });
+
+  return promise;
 }
 
 /**
@@ -34,58 +67,42 @@ function connect(uri: string): Promise<MongoClient> {
  *
  * Rejects with a human-readable error when the environment is not configured
  * instead of throwing while the module is imported, so a missing database
- * setting cannot take down every route (or the build).
+ * setting cannot take down every route (or the build). Failed connection
+ * attempts are evicted from the cache so a later call can retry.
  */
-function getClientPromise(): Promise<MongoClient> {
+export function getClient(): Promise<MongoClient> {
+  const cached = readCachedClientPromise();
+  if (cached) {
+    // If a cached promise rejects (e.g. a previous attempt or a stale HMR
+    // global), evict it so the next call can retry.
+    cached.catch(() => {
+      if (readCachedClientPromise() === cached) {
+        writeCachedClientPromise(null);
+      }
+    });
+    return cached;
+  }
+
   const uri = getMongoUri();
   if (!uri) {
     return Promise.reject(new Error(MISSING_URI_MESSAGE));
   }
 
-  if (process.env.NODE_ENV === "development") {
-    // Keep the connection across HMR reloads.
-    if (!globalForMongo._mongoClientPromise) {
-      globalForMongo._mongoClientPromise = connect(uri);
+  const promise = connect(uri);
+  writeCachedClientPromise(promise);
+
+  // A rejected client promise must not poison the cache forever.
+  promise.catch(() => {
+    if (readCachedClientPromise() === promise) {
+      writeCachedClientPromise(null);
     }
-    return globalForMongo._mongoClientPromise;
-  }
+  });
 
-  if (!productionClientPromise) {
-    productionClientPromise = connect(uri);
-  }
-  return productionClientPromise;
+  return promise;
 }
-
-/**
- * A promise that intentionally never settles. It is only used as the default
- * export when there is no database URI: the NextAuth adapter initializes an
- * internal async block as soon as it is constructed, so handing it a rejecting
- * promise would surface as an unhandled rejection at import time.
- */
-const unconfiguredClientPromise = new Promise<MongoClient>(() => {
-  // Never resolves; callers should use getDb(), which reports the error.
-});
 
 /** Get a database handle by name. Rejects clearly when MONGODB_URI is absent. */
 export async function getDb(name: string): Promise<Db> {
-  const client = await getClientPromise();
+  const client = await getClient();
   return client.db(name);
 }
-
-/** Default export kept for the NextAuth MongoDB adapter. */
-function getDefaultClientPromise(): Promise<MongoClient> {
-  if (!getMongoUri()) return unconfiguredClientPromise;
-
-  try {
-    return getClientPromise();
-  } catch (error: unknown) {
-    // A malformed connection string must not crash the module import. Log it
-    // once here; API routes report the details through getDb().
-    console.error("MONGODB_URI could not be used.", error);
-    return unconfiguredClientPromise;
-  }
-}
-
-const clientPromise: Promise<MongoClient> = getDefaultClientPromise();
-
-export default clientPromise;

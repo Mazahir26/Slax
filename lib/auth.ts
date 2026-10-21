@@ -1,8 +1,7 @@
 import { type NextAuthOptions } from "next-auth";
-import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
 import EmailProvider from "next-auth/providers/email";
 import nodemailer from "nodemailer";
-import client from "@/lib/mongodb";
+import { createMongoAdapter } from "@/lib/mongoAdapter";
 import { signInEmailHtml, signInEmailText } from "@/lib/emails/auth";
 
 // Environment is read once per module load (normal for serverless runtimes).
@@ -38,9 +37,23 @@ export const authOptions: NextAuthOptions = {
     error: "/error",
     newUser: "/onboarding",
   },
-  adapter: MongoDBAdapter(client),
+  adapter: createMongoAdapter("auth"),
   session: {
     strategy: "jwt",
+  },
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user?.id) {
+        token.uid = user.id;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user && typeof token.uid === "string") {
+        session.user.id = token.uid;
+      }
+      return session;
+    },
   },
 
   providers: [
