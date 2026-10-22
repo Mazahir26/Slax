@@ -102,9 +102,33 @@ function cleanText(value: string): string {
     .trim();
 }
 
+/**
+ * Remove complete tag-like sequences from a stored name before it is shown.
+ * The result is still untrusted text and must be escaped for its context.
+ */
+function plainName(value: string): string {
+  return cleanText(value)
+    .replace(/<[^>]*>/g, " ")
+    .replace(/[<>]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** A stored name, cleaned for display and escaped for HTML output. */
+function displayName(value: string): string {
+  return escapeHtml(
+    cleanText(value).replace(/<[^>]*>/g, " ").replace(/[<>]/g, "")
+  );
+}
+
 /** A stored name, made safe for a mail header. */
 function headerName(name: string): string {
-  return sanitizeHeaderValue(cleanText(name).replace(/[<>]/g, ""), 60);
+  return sanitizeHeaderValue(
+    cleanText(name)
+      .replace(/<[^>]*>/g, " ")
+      .replace(/[<>]/g, ""),
+    60
+  );
 }
 
 /**
@@ -261,7 +285,7 @@ function reminderIntro(
 function buildReminderContent(data: ReminderEmailData): ReminderContent {
   const today = (Array.isArray(data.today) ? data.today : [])
     .filter((name): name is string => typeof name === "string")
-    .map(cleanText)
+    .map(plainName)
     .filter((name) => name.length > 0);
 
   const upcoming = (Array.isArray(data.upcoming) ? data.upcoming : [])
@@ -270,7 +294,7 @@ function buildReminderContent(data: ReminderEmailData): ReminderContent {
         item !== null && typeof item === "object"
     )
     .map((item) => ({
-      name: cleanText(item.name),
+      name: plainName(item.name),
       daysUntil: Number.isFinite(item.daysUntil) ? item.daysUntil : 1,
       dateLabel: cleanText(item.dateLabel),
     }))
@@ -300,7 +324,7 @@ function buildReminderContent(data: ReminderEmailData): ReminderContent {
 function todaySectionHtml(names: string[]): string {
   const rows = names
     .map(
-      (name) => `<div style="font-family:${FONT};font-size:16px;line-height:24px;font-weight:600;color:${INK};padding-top:10px;"><span style="color:${BRAND};font-weight:700;">&#8226;</span>&nbsp;&nbsp;${escapeHtml(
+      (name) => `<div style="font-family:${FONT};font-size:16px;line-height:24px;font-weight:600;color:${INK};padding-top:10px;"><span style="color:${BRAND};font-weight:700;">&#8226;</span>&nbsp;&nbsp;${displayName(
         name
       )}</div>`
     )
@@ -324,7 +348,7 @@ function upcomingSectionHtml(items: UpcomingBirthday[]): string {
       const border = isLast ? "0" : `1px solid ${HAIRLINE}`;
       return `<tr>
         <td class="detail-cell" style="padding:12px 0;border-bottom:${border};vertical-align:top;">
-          <div style="font-family:${FONT};font-size:16px;line-height:22px;font-weight:600;color:${INK};">${escapeHtml(
+          <div style="font-family:${FONT};font-size:16px;line-height:22px;font-weight:600;color:${INK};">${displayName(
             item.name
           )}</div>
           <div style="font-family:${FONT};font-size:12px;line-height:18px;color:${MUTED};padding-top:2px;">${escapeHtml(
@@ -580,8 +604,8 @@ export function buildBirthdayEmail(data: BirthdayEmailData): {
 } {
   const siteUrl = normalizeSiteUrl(data.siteUrl);
   const dashboardUrl = `${siteUrl}/dashboard`;
-  const name = cleanText(data.name) || "friend";
-  const safeName = escapeHtml(name);
+  const name = plainName(data.name) || "friend";
+  const safeName = displayName(name);
   const subject = sanitizeHeaderValue(`Happy Birthday, ${headerName(name)}! 🎉`, 90);
 
   const headingHtml = `Happy Birthday, ${safeName}! 🎉`;

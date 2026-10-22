@@ -134,7 +134,7 @@ export function signInEmailHtml({
                             <tbody>
                               <tr>
                                 <td style="width:160px;">
-                                  <img height="auto" src="https://${escapedHost}/logo.png" style="border:0;display:block;outline:none;text-decoration:none;height:auto;width:100%;font-size:13px;" width="160" />
+                                  <img height="auto" alt="Slax" src="https://${escapedHost}/logo.png" style="border:0;display:block;outline:none;text-decoration:none;height:auto;width:100%;font-size:13px;" width="160" />
                                 </td>
                               </tr>
                             </tbody>
@@ -160,8 +160,8 @@ export function signInEmailHtml({
                         <td align="center" vertical-align="middle" style="font-size:0px;padding:10px 25px;word-break:break-word;">
                           <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:separate;line-height:100%;">
                             <tr>
-                              <td align="center" bgcolor="#4c9bf5" role="presentation" style="border:none;border-radius:3px;cursor:auto;mso-padding-alt:10px 25px;background:#4c9bf5;" valign="middle">
-                                <p style="display:inline-block;background:#4c9bf5;color:#ffffff;font-family:Helvetica, Helvetica, Arial, sans-serif;font-size:13px;font-weight:normal;line-height:120%;margin:0;text-decoration:none;text-transform:none;padding:10px 25px;mso-padding-alt:0px;border-radius:3px;">
+                              <td align="center" bgcolor="#0068c4" role="presentation" style="border:none;border-radius:3px;cursor:auto;mso-padding-alt:10px 25px;background:#0068c4;" valign="middle">
+                                <p style="display:inline-block;background:#0068c4;color:#ffffff;font-family:Helvetica, Helvetica, Arial, sans-serif;font-size:13px;font-weight:normal;line-height:120%;margin:0;text-decoration:none;text-transform:none;padding:10px 25px;mso-padding-alt:0px;border-radius:3px;">
                                 <a  href="${escapedUrl}" target="_blank" style="text-decoration: none; display: inline-block;">
                                 <span style="color:#eeeeee">Sign in</span>
                                 </p>
@@ -201,7 +201,7 @@ export function signInEmailHtml({
                       </tr>
                       <tr>
                         <td align="center" style="font-size:0px;padding:10px 25px;padding-bottom:10px;word-break:break-word;">
-                          <div style="font-family:Helvetica, sans-serif;font-size:15px;line-height:1;text-align:center;color:#000000;">©2022 Slax. All rights reserved</div>
+                          <div style="font-family:Helvetica, sans-serif;font-size:15px;line-height:1;text-align:center;color:#000000;">©${new Date().getFullYear()} Slax. All rights reserved</div>
                         </td>
                       </tr>
                     </tbody>
