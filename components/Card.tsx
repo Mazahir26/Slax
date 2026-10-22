@@ -73,10 +73,6 @@ export default function Card({
           aria-hidden="true"
           className="absolute inset-0 bg-[var(--card-color)] transition-opacity duration-200 group-hover:opacity-90 dark:hidden"
         />
-        <span
-          aria-hidden="true"
-          className="absolute inset-y-3 left-0 hidden w-1 rounded-r-full bg-[var(--card-color)] dark:block"
-        />
 
         <div className="relative z-10 min-w-0 flex-1">
           <p className="truncate text-base font-bold text-[color:var(--card-ink)] sm:text-lg dark:text-card-foreground">
