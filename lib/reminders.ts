@@ -1,7 +1,20 @@
 import moment from "moment-timezone";
-import { REMINDER_TIMEZONE, toDateKey } from "./dateOnly";
+import { REMINDER_TIMEZONE, safeTimeZone, toDateKey } from "./dateOnly";
 
 export { REMINDER_TIMEZONE };
+
+/**
+ * A timezone that is safe to hand to moment-timezone.
+ *
+ * `safeTimeZone` only checks `Intl`, but reminder matching and mail sending use
+ * `moment.tz`, which ships its own zone database and can therefore reject a
+ * name `Intl` accepts. Fall back to `REMINDER_TIMEZONE` so a stored value can
+ * never make bucket building or sending throw.
+ */
+export function safeReminderTimeZone(value: unknown): string {
+  const candidate = safeTimeZone(value);
+  return moment.tz.zone(candidate) ? candidate : REMINDER_TIMEZONE;
+}
 
 /** Number of calendar days after today included in the "upcoming" heads-up. */
 export const UPCOMING_WINDOW_DAYS = 3;
@@ -20,12 +33,21 @@ export interface ReminderEventInput {
   isUser?: boolean;
 }
 
+export interface UpcomingReminder {
+  /** Raw name, without punctuation. */
+  name: string;
+  /** Calendar days from the user's local today (1..`UPCOMING_WINDOW_DAYS`). */
+  daysUntil: number;
+  /** The computed occurrence, formatted like `1st of Nov` in the user's zone. */
+  dateLabel: string;
+}
+
 export interface ReminderMail {
   user: string;
-  /** Lines such as "Ada." */
+  /** Raw names (no punctuation) of birthdays that fall today. */
   today: string[];
-  /** Lines such as "Ada's birthday on 1st of Nov." */
-  upcoming: string[];
+  /** Birthdays in the next `UPCOMING_WINDOW_DAYS` days. */
+  upcoming: UpcomingReminder[];
 }
 
 export interface SelfBirthdayMail {
@@ -79,7 +101,7 @@ function twoDigits(value: number): string {
  * The month/day a stored birthday is observed on in a given year.
  *
  * The key is already a civil date (`YYYY-MM-DD`), either stored directly or
- * derived from a legacy BSON Date in `REMINDER_TIMEZONE`, so only the month and
+ * derived from a legacy BSON Date in the user's timezone, so only the month and
  * day are used here.
  *
  * Locked policy: a Feb 29 birthday is observed on Feb 28 in non-leap years.
@@ -101,20 +123,22 @@ function effectiveMonthDay(dateKey: string, isLeapYear: boolean): string {
  * testable with a fixed `now`.
  *
  * Matching is done on "MM-DD" keys built from each stored date's civil date
- * (`toDateKey`), while "today" is the current day in `REMINDER_TIMEZONE`. That
- * makes month and year rollover (Oct 30 -> Nov 1, Dec 30 -> Jan 1) fall out
- * naturally. Stored dates are normalised through `effectiveMonthDay` so the
- * Feb 29 policy above applies uniformly.
+ * (`toDateKey`), while "today" is the current day in `timeZone` (default
+ * `REMINDER_TIMEZONE`). That makes month and year rollover (Oct 30 -> Nov 1,
+ * Dec 30 -> Jan 1) fall out naturally. Stored dates are normalised through
+ * `effectiveMonthDay` so the Feb 29 policy above applies uniformly.
  *
  * Important: a stored `YYYY-MM-DD` string is a civil date and is never shifted
  * by a timezone conversion. Only legacy BSON `Date` values are treated as
- * instants and converted to their IST calendar date.
+ * instants and converted to their calendar date in `timeZone`.
  */
 export function buildReminderBuckets(
   events: ReminderEventInput[],
-  now: moment.MomentInput
+  now: moment.MomentInput,
+  timeZone: string = REMINDER_TIMEZONE
 ): ReminderBuckets {
-  const today = moment.tz(now, REMINDER_TIMEZONE).startOf("day");
+  const zone = safeReminderTimeZone(timeZone);
+  const today = moment.tz(now, zone).startOf("day");
   const isLeapYear = today.isLeapYear();
 
   const offsetsByKey = new Map<string, number>();
@@ -141,7 +165,7 @@ export function buildReminderBuckets(
     // mailer, where CR/LF or angle brackets could alter headers.
     if (!isSafeEmailRecipient(event.user)) continue;
 
-    const dateKey = toDateKey(event.date);
+    const dateKey = toDateKey(event.date, zone);
     if (dateKey === null) continue;
 
     const offset = offsetsByKey.get(effectiveMonthDay(dateKey, isLeapYear));
@@ -175,14 +199,18 @@ export function buildReminderBuckets(
 
     reminders.push({
       user: bucket.user,
-      today: [...bucket.today].sort(compareNames).map((name) => `${name}.`),
+      today: [...bucket.today].sort(compareNames),
       upcoming: [...bucket.upcoming]
         .sort((a, b) => a.offset - b.offset || compareNames(a.name, b.name))
         .map(({ name, offset }) => {
           // Use the computed occurrence so the displayed month/day (and year
           // for rollover) is the next actual birthday, not the stored year.
           const occurrence = today.clone().add(offset, "days");
-          return `${name}'s birthday on ${occurrence.format("Do [of] MMM")}.`;
+          return {
+            name,
+            daysUntil: offset,
+            dateLabel: occurrence.format("Do [of] MMM"),
+          };
         }),
     });
   }

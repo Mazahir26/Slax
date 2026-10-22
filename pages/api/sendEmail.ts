@@ -3,18 +3,27 @@ import moment from "moment-timezone";
 import type { NextApiRequest, NextApiResponse } from "next";
 import nodemailer from "nodemailer";
 import type { SendMailOptions } from "nodemailer";
+import {
+  claimDelivery,
+  ensureDeliveryIndexes,
+  markDeliverySent,
+  releaseDelivery,
+  type DeliveryKind,
+} from "../../lib/deliveryLog";
+import {
+  buildBirthdayEmail,
+  buildReminderEmail,
+} from "../../lib/emails/reminder";
 import { getDb } from "../../lib/mongodb";
 import {
   buildReminderBuckets,
   isSafeEmailRecipient,
-  REMINDER_TIMEZONE,
-  sanitizeHeaderValue,
+  safeReminderTimeZone,
   type ReminderEventInput,
+  type ReminderMail,
+  type SelfBirthdayMail,
 } from "../../lib/reminders";
-import {
-  happyBirthdayEmailHtml,
-  reminderEmailHtml,
-} from "../../lib/emails/reminder";
+import { resolveSiteUrl } from "../../lib/siteUrl";
 
 /** Subset of `Data.reminders` this endpoint reads. */
 interface ReminderDocument {
@@ -22,6 +31,12 @@ interface ReminderDocument {
   date?: unknown;
   user?: unknown;
   isUser?: unknown;
+}
+
+/** Subset of `auth.users` this endpoint reads. */
+interface UserDocument {
+  email?: unknown;
+  timezone?: unknown;
 }
 
 /**
@@ -94,6 +109,48 @@ function toReminderEvents(documents: ReminderDocument[]): ReminderEventInput[] {
   return events;
 }
 
+function groupEventsByUser(
+  events: ReminderEventInput[]
+): Map<string, ReminderEventInput[]> {
+  const grouped = new Map<string, ReminderEventInput[]>();
+  for (const event of events) {
+    const existing = grouped.get(event.user);
+    if (existing) {
+      existing.push(event);
+    } else {
+      grouped.set(event.user, [event]);
+    }
+  }
+  return grouped;
+}
+
+/** Everything due for one recipient on their own local day. */
+interface DueUser {
+  user: string;
+  timezone: string;
+  localDate: string;
+  reminders: ReminderMail[];
+  selfBirthdays: SelfBirthdayMail[];
+}
+
+/** One claimed delivery whose mail promise is being tracked. */
+interface SendTask {
+  kind: DeliveryKind;
+  user: string;
+  localDate: string;
+  promise: Promise<unknown>;
+}
+
+/**
+ * Keep an early rejection from surfacing as an unhandled rejection while the
+ * remaining users are still being claimed. The original promise is returned so
+ * `Promise.allSettled` still observes the rejection.
+ */
+function trackSend(promise: Promise<unknown>): Promise<unknown> {
+  promise.catch(() => undefined);
+  return promise;
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -125,6 +182,15 @@ export default async function handler(
     });
   }
 
+  const body = req.body;
+  if (body.dryRun !== undefined && typeof body.dryRun !== "boolean") {
+    return res.status(400).json({
+      msg: "dryRun must be a boolean",
+      code: 400,
+    });
+  }
+  const dryRun = body.dryRun === true;
+
   try {
     // getDb() rejects cleanly when MONGODB_URI is missing or invalid instead of
     // waiting forever on the adapter's never-settling default promise.
@@ -146,21 +212,78 @@ export default async function handler(
       });
     }
 
-    // `now` is captured once so every email in a run agrees on "today".
-    const now = moment().tz(REMINDER_TIMEZONE);
-    const { reminders, selfBirthdays } = buildReminderBuckets(
-      toReminderEvents(data),
-      now
+    // Timezone is optional on legacy accounts; a missing/invalid value falls
+    // back to the original Asia/Kolkata behaviour.
+    const users = await (await getDb("auth"))
+      .collection<UserDocument>("users")
+      .find({}, { projection: { _id: 0, email: 1, timezone: 1 } })
+      .toArray();
+
+    const timezoneByEmail = new Map<string, unknown>();
+    for (const row of users) {
+      if (typeof row.email !== "string" || row.email.length === 0) continue;
+      if (!timezoneByEmail.has(row.email)) {
+        timezoneByEmail.set(row.email, row.timezone);
+      }
+    }
+
+    const dueUsers: DueUser[] = [];
+    const eventsByUser = groupEventsByUser(toReminderEvents(data));
+
+    for (const [user, userEvents] of eventsByUser) {
+      // Use the moment-aware guard: a zone `Intl` accepts but moment-timezone
+      // does not know would otherwise throw inside `moment().tz(...)`.
+      const timezone = safeReminderTimeZone(timezoneByEmail.get(user));
+      // `now` is captured per user so "today" is that user's local day.
+      const localNow = moment().tz(timezone);
+      const localDate = localNow.format("YYYY-MM-DD");
+      const { reminders, selfBirthdays } = buildReminderBuckets(
+        userEvents,
+        localNow,
+        timezone
+      );
+
+      if (reminders.length === 0 && selfBirthdays.length === 0) continue;
+
+      dueUsers.push({
+        user,
+        timezone,
+        localDate,
+        reminders,
+        selfBirthdays,
+      });
+    }
+
+    const wouldSendReminders = dueUsers.reduce(
+      (total, due) => total + due.reminders.length,
+      0
     );
+    const wouldSendBirthdays = dueUsers.reduce(
+      (total, due) => total + due.selfBirthdays.length,
+      0
+    );
+
+    // A dry run reports what a real run would do without claiming, sending or
+    // even requiring SMTP credentials.
+    if (dryRun) {
+      return res.status(200).json({
+        msg: "Dry run",
+        wouldSendReminders,
+        wouldSendBirthdays,
+        users: dueUsers.length,
+        failed: 0,
+      });
+    }
 
     // A quiet day needs no mail credentials at all: report a successful no-op
     // so cron callers do not fail when there is simply nothing to send.
-    if (reminders.length === 0 && selfBirthdays.length === 0) {
+    if (dueUsers.length === 0) {
       return res.status(200).json({
         msg: "Done",
         noOfMails: 0,
         UserBirthdays: 0,
         failed: 0,
+        skipped: 0,
       });
     }
 
@@ -184,6 +307,11 @@ export default async function handler(
       });
     }
 
+    const siteUrl = resolveSiteUrl();
+
+    // Claims are only safe once the unique index exists.
+    await ensureDeliveryIndexes(database);
+
     // Port 465 uses implicit TLS; every other port negotiates STARTTLS.
     const secure = mail.port === 465;
     const transporter = nodemailer.createTransport({
@@ -198,55 +326,132 @@ export default async function handler(
     });
 
     // Doing the work inside a promise turns a synchronous nodemailer throw
-    // (bad header, missing recipient) into a rejection for allSettled.
+    // (bad header, missing recipient) or template error into a rejection for
+    // allSettled, so the claim is released and the batch keeps going.
     const send = (options: SendMailOptions) =>
       Promise.resolve().then(() => transporter.sendMail(options));
 
-    const reminderSends = reminders
-      .filter((mail) => isSafeEmailRecipient(mail.user))
-      .map((mail) =>
-        send({
-          to: mail.user,
-          from,
-          subject: "Birthday Reminder from Slax",
-          html: reminderEmailHtml(mail.upcoming, mail.today, mail.user),
-        })
-      );
-    const birthdaySends = selfBirthdays
-      .filter((birthday) => isSafeEmailRecipient(birthday.user))
-      .map((birthday) => {
-        // Never interpolate raw stored text into a header: strip CR/LF and
-        // other control characters before building the subject line.
-        const safeName = sanitizeHeaderValue(birthday.userName);
-        return send({
-          to: birthday.user,
-          from,
-          subject: safeName ? `Happy Birthday ${safeName}` : "Happy Birthday",
-          html: happyBirthdayEmailHtml(birthday.userName),
-        });
-      });
+    const tasks: SendTask[] = [];
+    let skipped = 0;
 
-    // One failing address must not abort the whole batch.
-    const results = await Promise.allSettled([
-      ...reminderSends,
-      ...birthdaySends,
-    ]);
+    for (const due of dueUsers) {
+      if (due.reminders.length > 0) {
+        const claimed = await claimDelivery(
+          database,
+          due.user,
+          due.localDate,
+          "reminder"
+        );
+        if (!claimed) {
+          skipped += 1;
+        } else {
+          const reminder = due.reminders[0];
+          tasks.push({
+            kind: "reminder",
+            user: due.user,
+            localDate: due.localDate,
+            promise: trackSend(
+              Promise.resolve().then(() => {
+                const content = buildReminderEmail({
+                  user: due.user,
+                  today: reminder.today,
+                  upcoming: reminder.upcoming,
+                  timezone: due.timezone,
+                  siteUrl,
+                });
+                return send({
+                  to: due.user,
+                  from,
+                  subject: content.subject,
+                  html: content.html,
+                  text: content.text,
+                });
+              })
+            ),
+          });
+        }
+      }
+
+      if (due.selfBirthdays.length > 0) {
+        const claimed = await claimDelivery(
+          database,
+          due.user,
+          due.localDate,
+          "birthday"
+        );
+        if (!claimed) {
+          skipped += 1;
+        } else {
+          const birthday = due.selfBirthdays[0];
+          tasks.push({
+            kind: "birthday",
+            user: due.user,
+            localDate: due.localDate,
+            promise: trackSend(
+              Promise.resolve().then(() => {
+                const content = buildBirthdayEmail({
+                  user: due.user,
+                  name: birthday.userName,
+                  timezone: due.timezone,
+                  siteUrl,
+                });
+                return send({
+                  to: due.user,
+                  from,
+                  subject: content.subject,
+                  html: content.html,
+                  text: content.text,
+                });
+              })
+            ),
+          });
+        }
+      }
+    }
+
+    // One failing address must not abort the whole batch, and each settled
+    // task updates only its own claim.
+    const results = await Promise.allSettled(
+      tasks.map((task) => task.promise)
+    );
 
     let noOfMails = 0;
     let userBirthdays = 0;
     let failed = 0;
-    results.forEach((result, index) => {
-      if (result.status === "rejected") {
-        failed += 1;
-        console.error("sendEmail: failed to send email", result.reason);
-        return;
+
+    for (let index = 0; index < results.length; index += 1) {
+      const task = tasks[index];
+      const result = results[index];
+
+      if (result.status === "fulfilled") {
+        await markDeliverySent(
+          database,
+          task.user,
+          task.localDate,
+          task.kind
+        );
+        if (task.kind === "reminder") {
+          noOfMails += 1;
+        } else {
+          userBirthdays += 1;
+        }
+        continue;
       }
-      if (index < reminderSends.length) {
-        noOfMails += 1;
-      } else {
-        userBirthdays += 1;
+
+      failed += 1;
+      try {
+        await releaseDelivery(database, task.user, task.localDate, task.kind);
+      } catch (releaseError: unknown) {
+        // The claim stays until the TTL if this fails, which suppresses a
+        // duplicate send for the same day even though the mail failed.
+        console.error(
+          "sendEmail: could not release a failed delivery claim",
+          releaseError instanceof Error ? releaseError.name : "unknown error"
+        );
       }
-    });
+      // Deliberately no recipient address in the log (PII).
+      console.error(`sendEmail: failed to send a ${task.kind} email`);
+    }
 
     // Partial delivery is a failure for the caller: cron must retry/report
     // rather than treat a run with rejected recipients as a success.
@@ -256,6 +461,7 @@ export default async function handler(
         noOfMails,
         UserBirthdays: userBirthdays,
         failed,
+        skipped,
       });
     }
 
@@ -264,8 +470,9 @@ export default async function handler(
       noOfMails,
       UserBirthdays: userBirthdays,
       failed,
+      skipped,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("sendEmail: unexpected failure", error);
     return res.status(500).json({
       msg: "Oops something went wrong",

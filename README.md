@@ -23,9 +23,11 @@ Live demo: [slax.studio](https://slax.studio)
 
 ## Features
 
-- **Email reminders** — everyone sharing an account gets an email listing upcoming birthdays, three days ahead of time.
+- **Email reminders** — one email per local day when birthdays are due, covering today, tomorrow and the next three days.
 - **Day-of reminders** — birthdays that fall today are included in the same email, so nothing slips through.
+- **Timezone-aware scheduling** — reminders go out shortly after your local midnight, not at a fixed server time.
 - **Self-birthday email** — your own birthday triggers a separate happy-birthday email to your account address.
+- **Plain-text alternatives** — every email also includes a text part for clients that block HTML.
 - **Multi-device support** — sign in from as many devices as you like; there is no device limit.
 - **Dark mode** — follows your system preference and can be toggled manually.
 - **Responsive UI** — works on phones, tablets and desktops.
@@ -77,7 +79,7 @@ Copy [`.env.example`](.env.example) to `.env.local` and fill in:
 | `EMAIL_SERVER_PORT` | Yes | SMTP port, for example `465`. Port `465` uses implicit TLS; other ports negotiate STARTTLS. |
 | `EMAIL_SERVER_USER` | Yes | SMTP username and the `From:` address for sign-in and reminder emails. |
 | `EMAIL_SERVER_PASSWORD` | Yes | SMTP password or Gmail app password. |
-| `key` | Yes for reminders | Shared secret that authorizes the reminder cron request. |
+| `key` | Yes for reminders | Shared secret that authorizes the reminder request. Store the same value as the `SLAX_CRON_KEY` GitHub Actions secret. |
 | `NEXT_PUBLIC_SITE_URL` | Optional | Canonical origin used by `/robots.txt` and `/sitemap.xml`. Takes precedence over `NEXTAUTH_URL`; falls back to `https://slax.studio`. |
 
 `.env.local` and other local env files are git-ignored. Never commit real credentials.
@@ -94,10 +96,13 @@ MongoDB collections:
 - `auth.users`, `auth.accounts`, `auth.verification_tokens` — managed by the NextAuth MongoDB adapter.
 - `auth.sessions` — not used for session state (sessions are JWTs in cookies); it is only touched as a best-effort cleanup when an account is deleted.
 - `Data.reminders` — birthday records (`name`, `date`, `user`, `isUser`).
+- `Data.email_deliveries` — one record per successful user / local day / email kind. Used to make reminder runs idempotent. The collection and its indexes are created automatically on first use.
 
 ## Data notes / migration
 
-- Birthdays are stored in `Data.reminders`. Legacy records written as a BSON `Date` are still read correctly and are interpreted in **Asia/Kolkata**. New records are stored as date-only strings in `YYYY-MM-DD` form.
+- Birthdays are stored in `Data.reminders`. Legacy records written as a BSON `Date` are still read correctly and are interpreted in the user's stored timezone, falling back to **Asia/Kolkata** for users without one. New records are stored as date-only strings in `YYYY-MM-DD` form; those are civil dates and are never timezone-shifted.
+- **Timezone backfill is automatic.** Accounts created before timezone support have no `timezone` field and keep working with the **Asia/Kolkata** default; no migration is required. When an existing user opens the dashboard, the app stores their browser timezone once and shows a “Timezone updated” toast. An existing `timezone` value is never overwritten.
+- **Delivery records are automatic.** `Data.email_deliveries` and its indexes are created the first time the reminder endpoint runs. You do not need to create the collection or run any migration script.
 - **Self-birthday index:** before the unique partial index on `{ user: 1 }` where `isUser: true` can be built, remove any duplicate legacy self-birthday rows for the same user. Run this once against the `Data` database in `mongosh`:
 
   ```js
@@ -139,14 +144,17 @@ MongoDB collections:
 
 ## Reminder schedule and timezone
 
-- All reminder matching runs in **Asia/Kolkata (IST)** regardless of where the user lives.
-- The daily reminder email is sent **three days before** each birthday and also includes birthdays happening **today**.
-- The account owner's own birthday triggers a **self-birthday email** on the day itself.
+- Reminders are triggered **hourly** by [GitHub Actions](#cron-setup) (`0 * * * *`). The first run after a user's local midnight sends that day's email, so a reminder can arrive up to about **one hour after local midnight**.
+- Each account stores an IANA timezone (for example `Europe/Berlin`) in its `timezone` field, and reminder matching uses that timezone.
+- Accounts created before timezone support have no `timezone` field. They keep working with the **Asia/Kolkata** fallback and require no migration.
+- The first time an existing user opens the dashboard, Slax stores their browser timezone once and shows a **“Timezone updated”** toast. Users who already have a timezone are not updated again, so an explicitly stored value is never overwritten.
+- The reminder email is selected per user as the **today**, **tomorrow**, **upcoming** (two to three days ahead) or **mixed** variant when several cases apply. The account owner's own birthday triggers a separate **self-birthday email** on the day itself. Every variant includes a **plain-text alternative** to the HTML body.
 - A **February 29** birthday is observed on **February 28** in non-leap years, so leap-day birthdays still get reminders every year.
+- **Idempotency:** each user receives at most one reminder email and at most one self-birthday email per **local calendar day** (once per user, per day, per email kind). Successful sends are recorded in `Data.email_deliveries`, so running the job every 5 minutes, hourly or daily is safe: runs that find an existing delivery skip that user. Failed sends are not recorded and are retried on the next run.
 
 ## Cron setup
 
-The reminder endpoint is `POST /api/sendEmail`. Configure a scheduler (GitHub Actions, cronhub, cron-job.org, or any HTTP cron service) to call it **once a day**:
+The reminder endpoint is `POST /api/sendEmail`:
 
 ```http
 POST https://your-domain.com/api/sendEmail
@@ -155,19 +163,35 @@ Content-Type: application/json
 { "key": "<value of key from .env.local>" }
 ```
 
+The repository ships [`.github/workflows/reminders.yml`](.github/workflows/reminders.yml), which calls this endpoint every hour.
+
+### GitHub Actions
+
+1. Push the repository to GitHub. The **Birthday reminders** workflow is picked up automatically.
+2. Add two **repository secrets** under **Settings → Secrets and variables → Actions**:
+   - `SLAX_URL` — production base URL, for example `https://slax.studio`. A trailing slash is fine.
+   - `SLAX_CRON_KEY` — must match the `key` environment variable on the server.
+3. Optionally run the workflow once from **Actions → Birthday reminders → Run workflow** to verify the setup.
+
 Notes:
 
-- The `key` body value must match the `key` environment variable.
-- A missing or wrong key returns `401`.
-- If one or more recipients fail, the endpoint returns **`502`** with counts of sent and failed emails so the scheduler can surface or retry the run. A run with nothing to send returns `200`.
-- Vercel's built-in Cron sends `GET` requests, so use an external scheduler that can send a `POST` with a JSON body (for example GitHub Actions or cron-job.org).
+- The `key` body value must match the `key` environment variable. A missing or wrong key returns `401`.
+- The workflow runs at minute 0 of every hour and uses the `birthday-reminders` concurrency group, so overlapping runs queue instead of sending twice.
+- GitHub Actions schedules can start a few minutes late under load; this is harmless because delivery is idempotent.
+- Standard GitHub-hosted runners are free for **public** repositories. Private repositories use the account's included Actions minutes.
+- GitHub automatically disables scheduled workflows after **60 days** without repository activity in a public repository. Push a commit or run the workflow manually to re-enable it.
+- If one or more recipients fail, the endpoint returns **`502`** with counts of sent and failed emails, and the workflow fails visibly. A run with nothing to send returns `200`.
+
+### External cron (alternative)
+
+Any scheduler that can send a `POST` request with a JSON body can replace the GitHub Actions workflow — for example cron-job.org, cronhub, or a server crontab using `curl`. Call the endpoint hourly with the same `{"key":"..."}` body; delivery records keep repeated or overlapping runs idempotent.
 
 ## Deployment
 
 1. Push the repository to GitHub.
 2. Import it into [Vercel](https://vercel.com/new).
 3. Add every variable from [`.env.example`](.env.example) in the project settings. Set `NEXTAUTH_URL` to your production URL (for example `https://slax.studio`).
-4. Deploy, then point your cron scheduler at `/api/sendEmail`.
+4. Deploy, then set the `SLAX_URL` and `SLAX_CRON_KEY` GitHub Actions secrets as described in [Cron setup](#cron-setup). The hourly workflow then triggers reminders.
 
 Any platform that can run `npm run build` and `npm run start` also works. No Postgres database or other service is required.
 

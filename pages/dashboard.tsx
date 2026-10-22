@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { NextPage } from "next";
 import Head from "next/head";
 import { useRouter } from "next/router";
@@ -23,6 +23,7 @@ import {
   deleteEvent as DeleteEvent,
   editEvent as EditEvent,
   getEvents,
+  syncTimezone,
 } from "../lib/helperFunctions";
 
 const Dashboard: NextPage = () => {
@@ -35,8 +36,20 @@ const Dashboard: NextPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
 
+  // The timezone is persisted once per mount. The ref keeps React
+  // StrictMode's double effect invocation from firing the request twice.
+  const timezoneRequested = useRef(false);
+  const isMounted = useRef(false);
+
   const { data: session, status } = useSession();
   const router = useRouter();
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   // Unauthenticated visitors go straight to the login page instead of
   // landing on a dead-end message.
@@ -45,6 +58,43 @@ const Dashboard: NextPage = () => {
       void router.replace("/login");
     }
   }, [status, router]);
+
+  // Persist the browser's IANA timezone once the user is signed in. The API
+  // only writes it when no timezone is stored, so this is a no-op for users
+  // who already have one. Failures stay silent: reminders keep working (with
+  // the server-side fallback) and the dashboard must never be blocked.
+  useEffect(() => {
+    if (status !== "authenticated" || timezoneRequested.current) return;
+    timezoneRequested.current = true;
+
+    let timezone: string;
+    try {
+      timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    } catch (error) {
+      console.error("Could not detect the browser timezone.", error);
+      return;
+    }
+
+    if (!timezone) return;
+
+    syncTimezone(timezone)
+      .then((result) => {
+        if (!isMounted.current || !result?.updated) return;
+        // Prefer the timezone the server actually confirmed/stored. The
+        // detected value is only a fallback for an empty response body.
+        const confirmed = result.timezone || timezone;
+        toast.success("Timezone updated", {
+          description: `Reminders will now arrive shortly after midnight in ${confirmed.replace(
+            /_/g,
+            " "
+          )}.`,
+          duration: 8000,
+        });
+      })
+      .catch((error: unknown) => {
+        console.error("Could not sync the timezone.", error);
+      });
+  }, [status]);
 
   useEffect(() => {
     if (status !== "authenticated") return;

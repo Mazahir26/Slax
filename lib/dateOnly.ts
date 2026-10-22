@@ -4,10 +4,15 @@
  * A birthday is the calendar day the user picked, so it must never depend on
  * the browser or server timezone. New records store a `YYYY-MM-DD` date key.
  * Legacy records store BSON `Date`s; those are interpreted as instants and
- * converted to the calendar date observed in `REMINDER_TIMEZONE`.
+ * converted to the calendar date observed in the caller's timezone (which
+ * defaults to `REMINDER_TIMEZONE` for accounts without one).
  */
 
-/** Locked decision: every reminder calculation happens in India Standard Time. */
+/**
+ * Default timezone (and the backward-compatible fallback for accounts without
+ * a stored IANA timezone). Locked decision: reminders historically ran in
+ * India Standard Time, so missing/invalid values keep behaving that way.
+ */
 export const REMINDER_TIMEZONE = "Asia/Kolkata";
 
 const DATE_KEY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
@@ -47,22 +52,69 @@ export function isDateKey(value: unknown): value is string {
   );
 }
 
-/** Formatter is reused because building one per row is comparatively costly. */
-const DATE_KEY_FORMATTER = new Intl.DateTimeFormat("en-CA", {
-  timeZone: REMINDER_TIMEZONE,
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-});
+/**
+ * True when `value` is an IANA timezone name this runtime understands.
+ * `Intl.DateTimeFormat` throws a `RangeError` for unknown zones.
+ */
+export function isValidTimeZone(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return false;
 
-/** Calendar date of an instant in `REMINDER_TIMEZONE`, or null when invalid. */
-function instantToDateKey(date: Date): string | null {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: trimmed });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * A usable timezone for a stored/request value, falling back to the locked
+ * reminder timezone. Legacy documents without a timezone therefore keep the
+ * original India Standard Time behaviour.
+ */
+export function safeTimeZone(value: unknown): string {
+  return isValidTimeZone(value) ? value.trim() : REMINDER_TIMEZONE;
+}
+
+/**
+ * Formatters are reused because building one per row is comparatively costly.
+ * Keyed by timezone; the set of IANA zones is small and fixed. Unknown zones
+ * fall back to `REMINDER_TIMEZONE` without touching the cache.
+ */
+const DATE_KEY_FORMATTERS = new Map<string, Intl.DateTimeFormat>();
+
+function getDateKeyFormatter(timeZone: string): Intl.DateTimeFormat {
+  const normalized = timeZone.trim() || REMINDER_TIMEZONE;
+  const cached = DATE_KEY_FORMATTERS.get(normalized);
+  if (cached) return cached;
+
+  let formatter: Intl.DateTimeFormat;
+  try {
+    formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: normalized,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+  } catch {
+    return getDateKeyFormatter(REMINDER_TIMEZONE);
+  }
+
+  DATE_KEY_FORMATTERS.set(normalized, formatter);
+  return formatter;
+}
+
+/** Calendar date of an instant in `timeZone`, or null when invalid. */
+function instantToDateKey(date: Date, timeZone: string): string | null {
   if (Number.isNaN(date.getTime())) return null;
 
   let year = "";
   let month = "";
   let day = "";
-  for (const part of DATE_KEY_FORMATTER.formatToParts(date)) {
+  const formatter = getDateKeyFormatter(timeZone);
+  for (const part of formatter.formatToParts(date)) {
     if (part.type === "year") year = part.value;
     else if (part.type === "month") month = part.value;
     else if (part.type === "day") day = part.value;
@@ -78,13 +130,17 @@ function instantToDateKey(date: Date): string | null {
  * - Date-only strings pass through unchanged: they are already civil dates and
  *   must not be shifted by a timezone conversion.
  * - `Date` objects and ISO datetime strings are instants, so they are rendered
- *   in `REMINDER_TIMEZONE`. This is the documented legacy interpretation: a
- *   BSON Date of `2000-10-20T15:00:00Z` maps to `2000-10-20` in IST.
+ *   in `timeZone` (default `REMINDER_TIMEZONE`). This is the documented legacy
+ *   interpretation: a BSON Date of `2000-10-20T15:00:00Z` maps to
+ *   `2000-10-20` in IST, and to a different key in another zone when needed.
  * - Anything invalid (Feb 31, garbage, invalid Date) returns null.
  */
-export function toDateKey(value: Date | string): string | null {
+export function toDateKey(
+  value: Date | string,
+  timeZone: string = REMINDER_TIMEZONE
+): string | null {
   if (value instanceof Date) {
-    return instantToDateKey(value);
+    return instantToDateKey(value, timeZone);
   }
 
   if (typeof value !== "string") return null;
@@ -112,12 +168,15 @@ export function toDateKey(value: Date | string): string | null {
 
   const parsed = new Date(trimmed);
   if (Number.isNaN(parsed.getTime())) return null;
-  return instantToDateKey(parsed);
+  return instantToDateKey(parsed, timeZone);
 }
 
-/** Today's calendar date in `REMINDER_TIMEZONE`. */
-export function todayDateKey(now: Date = new Date()): string {
-  const key = instantToDateKey(now);
+/** Today's calendar date in `timeZone` (default `REMINDER_TIMEZONE`). */
+export function todayDateKey(
+  now: Date = new Date(),
+  timeZone: string = REMINDER_TIMEZONE
+): string {
+  const key = instantToDateKey(now, timeZone);
   if (key === null) {
     throw new RangeError("todayDateKey received an invalid Date.");
   }

@@ -184,6 +184,52 @@ export async function editEvent(
   }
 }
 
+/**
+ * Persist the browser's IANA timezone for the signed-in user.
+ *
+ * Returns `null` when the request cannot be attributed to a user (401/404) so
+ * callers can stay silent instead of showing a user-facing error. The server
+ * only writes the timezone once and reports whether it actually changed.
+ */
+export async function syncTimezone(
+  timezone: string
+): Promise<{ updated: boolean; timezone: string } | null> {
+  try {
+    const response = await fetch("/api/timezone", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ timezone }),
+    });
+
+    if (response.status === 401 || response.status === 404) {
+      return null;
+    }
+
+    await assertStatus(response, 200);
+
+    const body = (await response.json()) as {
+      updated?: unknown;
+      timezone?: unknown;
+    };
+
+    if (!body || typeof body.updated !== "boolean") {
+      throw new Error("The server returned an unexpected response.");
+    }
+
+    return {
+      updated: body.updated,
+      timezone:
+        typeof body.timezone === "string" && body.timezone.length > 0
+          ? body.timezone
+          : timezone,
+    };
+  } catch (error) {
+    throw toError(error, "Could not save your timezone.");
+  }
+}
+
 export async function getUser() {
   try {
     const response = await fetch("/api/newUser", {
