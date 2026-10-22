@@ -69,13 +69,43 @@ const Home: NextPage = () => {
                 </Button>
               ) : (
                 <>
-                  <Button
-                    size="lg"
-                    className="bg-brand text-brand-foreground hover:bg-brand/90 h-12 rounded-full px-7 text-base shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md motion-reduce:hover:translate-none!"
-                    onClick={() => signIn()}
-                  >
-                    Create an account
-                  </Button>
+                  <div className="flex flex-col items-center">
+                    <Button
+                      size="lg"
+                      className="bg-brand text-brand-foreground hover:bg-brand/90 h-12 rounded-full px-7 text-base shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md motion-reduce:hover:translate-none!"
+                      onClick={() => signIn()}
+                    >
+                      Create an account
+                    </Button>
+
+                    <p className="mt-1 flex items-start gap-1 select-none">
+                      <svg
+                        width="34"
+                        height="26"
+                        viewBox="0 0 34 26"
+                        fill="none"
+                        aria-hidden="true"
+                        className="mt-0.5 text-muted-foreground/70"
+                      >
+                        <path
+                          d="M31 23C21 25 9 21 5 8"
+                          stroke="currentColor"
+                          strokeWidth="1.7"
+                          strokeLinecap="round"
+                        />
+                        <path
+                          d="M5 8 4 16M5 8l8 3"
+                          stroke="currentColor"
+                          strokeWidth="1.7"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      <span className="font-display -rotate-3 text-2xl leading-none text-muted-foreground">
+                        it&apos;s free
+                      </span>
+                    </p>
+                  </div>
 
                   <Button
                     asChild
