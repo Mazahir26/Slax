@@ -9,9 +9,17 @@ export interface DeliveryDocument {
   /** `YYYY-MM-DD` in the user's own timezone. */
   localDate: string;
   kind: DeliveryKind;
-  status: "sending" | "sent";
+  /**
+   * `sending` while the claim is owned, `sent` after a confirmed hand-off and
+   * `failed` when SMTP gave an ambiguous outcome (the claim is kept on
+   * purpose so a later run does not duplicate the message).
+   */
+  status: "sending" | "sent" | "failed";
   createdAt: Date;
   sentAt?: Date;
+  failedAt?: Date;
+  /** Sanitized SMTP/network code, for operators. Never contains PII. */
+  errorCode?: string;
 }
 
 export const DELIVERY_COLLECTION = "email_deliveries";
@@ -113,9 +121,53 @@ export async function markDeliverySent(
   }
 }
 
+/** Keep an error code short, uppercase and free of addresses or messages. */
+function sanitizeErrorCode(value: string | undefined): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const code = value.trim().toUpperCase();
+  return /^[A-Z0-9_]{1,32}$/.test(code) ? code : undefined;
+}
+
 /**
- * Delete a claim after a failed send so a later run may retry the same
- * `{user, localDate, kind}` triple.
+ * Record an ambiguous delivery failure while keeping the claim.
+ *
+ * SMTP can accept a message and then lose the connection before acknowledging
+ * it. Retrying in that case could send a duplicate, so the claim stays in place
+ * (status `failed`) until the TTL removes it.
+ */
+export async function markDeliveryFailed(
+  db: Db,
+  user: string,
+  localDate: string,
+  kind: DeliveryKind,
+  errorCode?: string
+): Promise<void> {
+  const update: {
+    status: "failed";
+    failedAt: Date;
+    errorCode?: string;
+  } = {
+    status: "failed",
+    failedAt: new Date(),
+  };
+  const code = sanitizeErrorCode(errorCode);
+  if (code) update.errorCode = code;
+
+  const result = await deliveryCollection(db).updateOne(
+    { user, localDate, kind },
+    { $set: update }
+  );
+  if (!result.acknowledged) {
+    throw new Error("Delivery failure update was not acknowledged.");
+  }
+}
+
+/**
+ * Delete a claim after a definite pre-delivery failure so a later run may retry
+ * the same `{user, localDate, kind}` triple.
+ *
+ * Only use this when SMTP proves the message was never handed over. Ambiguous
+ * outcomes must keep their claim via `markDeliveryFailed`.
  */
 export async function releaseDelivery(
   db: Db,

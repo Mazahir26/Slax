@@ -6,6 +6,7 @@ import type { SendMailOptions } from "nodemailer";
 import {
   claimDelivery,
   ensureDeliveryIndexes,
+  markDeliveryFailed,
   markDeliverySent,
   releaseDelivery,
   type DeliveryKind,
@@ -133,22 +134,107 @@ interface DueUser {
   selfBirthdays: SelfBirthdayMail[];
 }
 
-/** One claimed delivery whose mail promise is being tracked. */
-interface SendTask {
+/** One email whose content is ready to be claimed and sent. */
+interface PlannedSend {
   kind: DeliveryKind;
   user: string;
   localDate: string;
-  promise: Promise<unknown>;
+  options: SendMailOptions;
 }
 
 /**
- * Keep an early rejection from surfacing as an unhandled rejection while the
- * remaining users are still being claimed. The original promise is returned so
- * `Promise.allSettled` still observes the rejection.
+ * SMTP/network failures that prove the message never left our side. Only these
+ * may release a claim for a later retry; everything else is ambiguous because
+ * the server may already have accepted the message.
  */
-function trackSend(promise: Promise<unknown>): Promise<unknown> {
-  promise.catch(() => undefined);
-  return promise;
+const PRE_DELIVERY_ERROR_CODES = new Set([
+  "EAUTH",
+  "ECONNECTION",
+  "EENVELOPE",
+  "EMESSAGE",
+  "EDNS",
+  "ENOTFOUND",
+  "EAI_AGAIN",
+  "EPROTO",
+]);
+
+/**
+ * Nodemailer puts SMTP/network codes on `code`. Keep only a short, uppercase
+ * token so no message text or recipient data can reach the database or logs.
+ */
+function sanitizeSmtpErrorCode(error: unknown): string | undefined {
+  if (typeof error !== "object" || error === null || !("code" in error)) {
+    return undefined;
+  }
+  const raw = (error as { code?: unknown }).code;
+  if (typeof raw !== "string") return undefined;
+  const code = raw.trim().toUpperCase();
+  return /^[A-Z0-9_]{1,32}$/.test(code) ? code : undefined;
+}
+
+function errorName(error: unknown): string {
+  return error instanceof Error ? error.name : "unknown error";
+}
+
+/**
+ * Build every message before any claim is taken. A template/header failure
+ * therefore aborts the run with zero claims instead of stranding later ones.
+ */
+function buildPlannedSends(
+  dueUsers: DueUser[],
+  from: string,
+  siteUrl: string
+): PlannedSend[] {
+  const planned: PlannedSend[] = [];
+
+  for (const due of dueUsers) {
+    if (due.reminders.length > 0) {
+      const reminder = due.reminders[0];
+      const content = buildReminderEmail({
+        user: due.user,
+        today: reminder.today,
+        upcoming: reminder.upcoming,
+        timezone: due.timezone,
+        siteUrl,
+      });
+      planned.push({
+        kind: "reminder",
+        user: due.user,
+        localDate: due.localDate,
+        options: {
+          to: due.user,
+          from,
+          subject: content.subject,
+          html: content.html,
+          text: content.text,
+        },
+      });
+    }
+
+    if (due.selfBirthdays.length > 0) {
+      const birthday = due.selfBirthdays[0];
+      const content = buildBirthdayEmail({
+        user: due.user,
+        name: birthday.userName,
+        timezone: due.timezone,
+        siteUrl,
+      });
+      planned.push({
+        kind: "birthday",
+        user: due.user,
+        localDate: due.localDate,
+        options: {
+          to: due.user,
+          from,
+          subject: content.subject,
+          html: content.html,
+          text: content.text,
+        },
+      });
+    }
+  }
+
+  return planned;
 }
 
 export default async function handler(
@@ -312,6 +398,22 @@ export default async function handler(
     // Claims are only safe once the unique index exists.
     await ensureDeliveryIndexes(database);
 
+    // Build every body before taking a single claim. A template failure here
+    // aborts the run with zero claims, so nothing can be stranded.
+    let planned: PlannedSend[];
+    try {
+      planned = buildPlannedSends(dueUsers, from, siteUrl);
+    } catch (buildError: unknown) {
+      console.error(
+        "sendEmail: could not build email content",
+        errorName(buildError)
+      );
+      return res.status(500).json({
+        msg: "Oops something went wrong",
+        code: 500,
+      });
+    }
+
     // Port 465 uses implicit TLS; every other port negotiates STARTTLS.
     const secure = mail.port === 465;
     const transporter = nodemailer.createTransport({
@@ -325,142 +427,148 @@ export default async function handler(
       },
     });
 
-    // Doing the work inside a promise turns a synchronous nodemailer throw
-    // (bad header, missing recipient) or template error into a rejection for
-    // allSettled, so the claim is released and the batch keeps going.
-    const send = (options: SendMailOptions) =>
-      Promise.resolve().then(() => transporter.sendMail(options));
-
-    const tasks: SendTask[] = [];
+    // Acquire every claim before the first SMTP send. Track only the claims
+    // this run actually owns so an error can release exactly those.
+    const acquired: PlannedSend[] = [];
     let skipped = 0;
 
-    for (const due of dueUsers) {
-      if (due.reminders.length > 0) {
+    try {
+      for (const sendPlan of planned) {
         const claimed = await claimDelivery(
           database,
-          due.user,
-          due.localDate,
-          "reminder"
+          sendPlan.user,
+          sendPlan.localDate,
+          sendPlan.kind
         );
-        if (!claimed) {
-          skipped += 1;
+        if (claimed) {
+          acquired.push(sendPlan);
         } else {
-          const reminder = due.reminders[0];
-          tasks.push({
-            kind: "reminder",
-            user: due.user,
-            localDate: due.localDate,
-            promise: trackSend(
-              Promise.resolve().then(() => {
-                const content = buildReminderEmail({
-                  user: due.user,
-                  today: reminder.today,
-                  upcoming: reminder.upcoming,
-                  timezone: due.timezone,
-                  siteUrl,
-                });
-                return send({
-                  to: due.user,
-                  from,
-                  subject: content.subject,
-                  html: content.html,
-                  text: content.text,
-                });
-              })
-            ),
-          });
+          skipped += 1;
         }
       }
-
-      if (due.selfBirthdays.length > 0) {
-        const claimed = await claimDelivery(
-          database,
-          due.user,
-          due.localDate,
-          "birthday"
-        );
-        if (!claimed) {
-          skipped += 1;
-        } else {
-          const birthday = due.selfBirthdays[0];
-          tasks.push({
-            kind: "birthday",
-            user: due.user,
-            localDate: due.localDate,
-            promise: trackSend(
-              Promise.resolve().then(() => {
-                const content = buildBirthdayEmail({
-                  user: due.user,
-                  name: birthday.userName,
-                  timezone: due.timezone,
-                  siteUrl,
-                });
-                return send({
-                  to: due.user,
-                  from,
-                  subject: content.subject,
-                  html: content.html,
-                  text: content.text,
-                });
-              })
-            ),
-          });
+    } catch (claimError: unknown) {
+      console.error(
+        "sendEmail: could not acquire delivery claims",
+        errorName(claimError)
+      );
+      // No SMTP send has started, so every claim from this run is safe to
+      // release. Do it best-effort: a failed release only delays a retry.
+      const releases = await Promise.allSettled(
+        acquired.map((sendPlan) =>
+          releaseDelivery(
+            database,
+            sendPlan.user,
+            sendPlan.localDate,
+            sendPlan.kind
+          )
+        )
+      );
+      for (const release of releases) {
+        if (release.status === "rejected") {
+          console.error(
+            "sendEmail: could not release a claim after a claim failure",
+            errorName(release.reason)
+          );
         }
       }
+      return res.status(500).json({
+        msg: "Oops something went wrong",
+        code: 500,
+      });
     }
 
-    // One failing address must not abort the whole batch, and each settled
-    // task updates only its own claim.
+    // One failing address must not abort the whole batch. allSettled attaches
+    // handlers immediately, so an early rejection is never unhandled while a
+    // later send is still in flight.
     const results = await Promise.allSettled(
-      tasks.map((task) => task.promise)
+      acquired.map((sendPlan) =>
+        Promise.resolve().then(() => transporter.sendMail(sendPlan.options))
+      )
     );
 
     let noOfMails = 0;
     let userBirthdays = 0;
     let failed = 0;
+    let finalizeFailed = 0;
 
     for (let index = 0; index < results.length; index += 1) {
-      const task = tasks[index];
+      const sendPlan = acquired[index];
       const result = results[index];
 
       if (result.status === "fulfilled") {
-        await markDeliverySent(
-          database,
-          task.user,
-          task.localDate,
-          task.kind
-        );
-        if (task.kind === "reminder") {
-          noOfMails += 1;
-        } else {
-          userBirthdays += 1;
+        // A sent mail must be recorded as sent. If this write fails the claim
+        // intentionally stays `sending` (no retry, no duplicate), but the
+        // batch continues with every other task.
+        try {
+          await markDeliverySent(
+            database,
+            sendPlan.user,
+            sendPlan.localDate,
+            sendPlan.kind
+          );
+          if (sendPlan.kind === "reminder") {
+            noOfMails += 1;
+          } else {
+            userBirthdays += 1;
+          }
+        } catch (finalizeError: unknown) {
+          finalizeFailed += 1;
+          console.error(
+            `sendEmail: could not record a sent ${sendPlan.kind} delivery`,
+            errorName(finalizeError)
+          );
         }
         continue;
       }
 
       failed += 1;
+      const code = sanitizeSmtpErrorCode(result.reason);
+
       try {
-        await releaseDelivery(database, task.user, task.localDate, task.kind);
-      } catch (releaseError: unknown) {
-        // The claim stays until the TTL if this fails, which suppresses a
-        // duplicate send for the same day even though the mail failed.
+        if (code && PRE_DELIVERY_ERROR_CODES.has(code)) {
+          // Definite pre-delivery failure: safe to retry on a later run.
+          await releaseDelivery(
+            database,
+            sendPlan.user,
+            sendPlan.localDate,
+            sendPlan.kind
+          );
+        } else {
+          // Ambiguous (or unknown): SMTP may already have accepted the mail,
+          // so keep the claim and never retry it today.
+          await markDeliveryFailed(
+            database,
+            sendPlan.user,
+            sendPlan.localDate,
+            sendPlan.kind,
+            code
+          );
+        }
+      } catch (finalizeError: unknown) {
+        finalizeFailed += 1;
         console.error(
-          "sendEmail: could not release a failed delivery claim",
-          releaseError instanceof Error ? releaseError.name : "unknown error"
+          `sendEmail: could not finalize a failed ${sendPlan.kind} delivery`,
+          errorName(finalizeError)
         );
       }
-      // Deliberately no recipient address in the log (PII).
-      console.error(`sendEmail: failed to send a ${task.kind} email`);
+
+      // Deliberately only the kind and sanitized code: no recipient or body.
+      console.error(
+        `sendEmail: failed to send a ${sendPlan.kind} email`,
+        code ?? "unknown error"
+      );
     }
 
-    // Partial delivery is a failure for the caller: cron must retry/report
-    // rather than treat a run with rejected recipients as a success.
-    if (failed > 0) {
+    // Partial delivery or an unrecorded final state is a failure for the
+    // caller: the workflow fails visibly, while claims still prevent
+    // duplicates on the next hourly run.
+    if (failed > 0 || finalizeFailed > 0) {
       return res.status(502).json({
         msg: "Some emails failed",
         noOfMails,
         UserBirthdays: userBirthdays,
         failed,
+        finalizeFailed,
         skipped,
       });
     }
@@ -470,10 +578,13 @@ export default async function handler(
       noOfMails,
       UserBirthdays: userBirthdays,
       failed,
+      finalizeFailed,
       skipped,
     });
   } catch (error: unknown) {
-    console.error("sendEmail: unexpected failure", error);
+    // Log only the error class: messages can contain connection details or
+    // recipient data.
+    console.error("sendEmail: unexpected failure", errorName(error));
     return res.status(500).json({
       msg: "Oops something went wrong",
       code: 500,

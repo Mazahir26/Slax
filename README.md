@@ -14,6 +14,7 @@ Live demo: [slax.studio](https://slax.studio)
 - [Auth flow and data model](#auth-flow-and-data-model)
 - [Data notes / migration](#data-notes--migration)
 - [Reminder schedule and timezone](#reminder-schedule-and-timezone)
+  - [Delivery failure semantics](#delivery-failure-semantics)
 - [Cron setup](#cron-setup)
 - [Deployment](#deployment)
 - [Scripts](#scripts)
@@ -96,7 +97,7 @@ MongoDB collections:
 - `auth.users`, `auth.accounts`, `auth.verification_tokens` — managed by the NextAuth MongoDB adapter.
 - `auth.sessions` — not used for session state (sessions are JWTs in cookies); it is only touched as a best-effort cleanup when an account is deleted.
 - `Data.reminders` — birthday records (`name`, `date`, `user`, `isUser`).
-- `Data.email_deliveries` — one record per successful user / local day / email kind. Used to make reminder runs idempotent. The collection and its indexes are created automatically on first use.
+- `Data.email_deliveries` — one claim per user / local day / email kind (`sending`, `sent` or `failed`). Used to make reminder runs at-most-once. The collection and its indexes are created automatically on first use.
 
 ## Data notes / migration
 
@@ -150,7 +151,18 @@ MongoDB collections:
 - The first time an existing user opens the dashboard, Slax stores their browser timezone once and shows a **“Timezone updated”** toast. Users who already have a timezone are not updated again, so an explicitly stored value is never overwritten.
 - The reminder email is selected per user as the **today**, **tomorrow**, **upcoming** (two to three days ahead) or **mixed** variant when several cases apply. The account owner's own birthday triggers a separate **self-birthday email** on the day itself. Every variant includes a **plain-text alternative** to the HTML body.
 - A **February 29** birthday is observed on **February 28** in non-leap years, so leap-day birthdays still get reminders every year.
-- **Idempotency:** each user receives at most one reminder email and at most one self-birthday email per **local calendar day** (once per user, per day, per email kind). Successful sends are recorded in `Data.email_deliveries`, so running the job every 5 minutes, hourly or daily is safe: runs that find an existing delivery skip that user. Failed sends are not recorded and are retried on the next run.
+- **Idempotency:** each user receives at most one reminder email and at most one self-birthday email per **local calendar day** (once per user, per day, per email kind). Claims are recorded in `Data.email_deliveries` before sending, so running the job every 5 minutes, hourly or daily is safe: runs that find an existing claim skip that user. See [Delivery failure semantics](#delivery-failure-semantics) for how failures are handled.
+
+### Delivery failure semantics
+
+Slax is **at-most-once by default**, not exactly-once. Raw SMTP cannot prove whether a message was accepted when the connection drops mid-conversation, so the guarantees are deliberately asymmetric: when in doubt, the claim is kept and an email may be missed rather than sent twice.
+
+- **All claims are acquired before the first SMTP send.** If acquiring any claim fails, the claims acquired by that run are released (best effort) and the endpoint returns `500` without starting a send.
+- **Definite pre-delivery failures** — `EAUTH`, `ECONNECTION`, `EENVELOPE`, `EMESSAGE`, `EDNS`, `ENOTFOUND`, `EAI_AGAIN`, `EPROTO` — mean the message was never handed to the server. The claim is released, so the next hourly run retries it.
+- **Ambiguous or unknown SMTP outcomes** — `ETIMEDOUT`, `ESOCKET`, `ECONNRESET`, `EPIPE` and anything unrecognised — may mean the server accepted the message before the connection failed. The claim is kept with status `failed` (plus a sanitized error code) and is **not retried that local day**. This prevents duplicates at the cost of a possible missed email.
+- **Sent but not recorded:** if `markDeliverySent` fails, the claim stays as `sending`, so the message is not retried and not duplicated.
+- Every settled task is finalized independently; one database error never skips the remaining tasks.
+- A run with any send failure or any finalization failure returns **`502`** with `failed`, `finalizeFailed`, `skipped`, `noOfMails` and `UserBirthdays` counts. A clean run returns `200`.
 
 ## Cron setup
 
@@ -177,10 +189,11 @@ Notes:
 
 - The `key` body value must match the `key` environment variable. A missing or wrong key returns `401`.
 - The workflow runs at minute 0 of every hour and uses the `birthday-reminders` concurrency group, so overlapping runs queue instead of sending twice.
-- GitHub Actions schedules can start a few minutes late under load; this is harmless because delivery is idempotent.
+- The hourly schedule is driven by **GitHub Actions**, not Vercel Cron. Vercel Hobby only allows once-per-day cron jobs, so the workflow in [`.github/workflows/reminders.yml`](.github/workflows/reminders.yml) is the supported scheduler.
+- GitHub Actions schedules can start a few minutes late under load; this is harmless because delivery is at-most-once.
 - Standard GitHub-hosted runners are free for **public** repositories. Private repositories use the account's included Actions minutes.
 - GitHub automatically disables scheduled workflows after **60 days** without repository activity in a public repository. Push a commit or run the workflow manually to re-enable it.
-- If one or more recipients fail, the endpoint returns **`502`** with counts of sent and failed emails, and the workflow fails visibly. A run with nothing to send returns `200`.
+- If one or more sends fail, or a sent/failed delivery cannot be finalized in MongoDB, the endpoint returns **`502`** with counts of sent, failed, finalization-failed and skipped emails, and the workflow fails visibly. A run with nothing to send returns `200`.
 
 ### External cron (alternative)
 
