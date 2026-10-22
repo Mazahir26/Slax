@@ -30,8 +30,6 @@
 
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
-  --color-accent-pink: var(--accent-pink);
-  --color-accent-pink-foreground: var(--accent-pink-foreground);
 
   --radius-sm: calc(var(--radius) - 8px);
   --radius-md: calc(var(--radius) - 4px);
@@ -56,8 +54,8 @@
   --secondary-foreground: oklch(0.2725 0.015 272.7);
   --muted: oklch(0.9653 0.0102 81.8);
   --muted-foreground: oklch(0.51 0.0148 268);
-  --accent: oklch(0.9545 0.0272 348.33);
-  --accent-foreground: oklch(0.42 0.11 350);
+  --accent: oklch(0.955 0.018 253);
+  --accent-foreground: oklch(0.32 0.07 253);
   --destructive: oklch(0.577 0.245 27.33);
   --destructive-foreground: oklch(0.99 0 0);
   --border: oklch(0.9 0.008 260);
@@ -66,16 +64,6 @@
 
   --brand: oklch(0.52 0.17 253);
   --brand-foreground: oklch(0.99 0 0);
-  --accent-pink: oklch(0.56 0.19 351.08);
-  --accent-pink-foreground: oklch(0.99 0 0);
-
-  /*
-   * Fixed deep gradient stops. Playful surfaces always carry white text, so
-   * these must stay dark in both themes instead of following --brand (which
-   * becomes a light blue in the dark theme).
-   */
-  --gradient-from: oklch(0.46 0.14 253);
-  --gradient-to: oklch(0.52 0.2 358);
 }
 
 .dark {
@@ -91,8 +79,8 @@
   --secondary-foreground: oklch(0.955 0.0045 260);
   --muted: oklch(0.2695 0.0173 270.7);
   --muted-foreground: oklch(0.71 0.014 262);
-  --accent: oklch(0.31 0.052 350);
-  --accent-foreground: oklch(0.94 0.025 350);
+  --accent: oklch(0.30 0.035 253);
+  --accent-foreground: oklch(0.95 0.01 253);
   --destructive: oklch(0.704 0.191 22.216);
   --destructive-foreground: oklch(0.99 0 0);
   --border: oklch(1 0 0 / 12%);
@@ -101,8 +89,6 @@
 
   --brand: oklch(0.72 0.15 253.52);
   --brand-foreground: oklch(0.18 0.02 270);
-  --accent-pink: oklch(0.7511 0.1742 352.89);
-  --accent-pink-foreground: oklch(0.18 0.02 350);
 }
 
 @layer base {
@@ -121,28 +107,24 @@
   }
 
   ::selection {
-    background-color: color-mix(in oklch, var(--accent-pink) 35%, transparent);
+    background-color: color-mix(in oklch, var(--brand) 25%, transparent);
   }
 }
 
 @layer utilities {
-  .bg-playful-gradient {
-    background-image: linear-gradient(
-      135deg,
-      var(--gradient-from) 0%,
-      var(--gradient-to) 100%
-    );
+  .home-pattern {
+    animation: home-pattern-drift 72s linear infinite;
+  }
+}
+
+@keyframes home-pattern-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
   }
 
-  .text-playful-gradient {
-    background-image: linear-gradient(
-      135deg,
-      var(--brand) 0%,
-      var(--accent-pink) 100%
-    );
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+  50% {
+    transform: translate3d(2px, -1px, 0);
   }
 }
 
@@ -150,6 +132,10 @@
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
+  }
+
+  .home-pattern {
+    animation: none;
   }
 
   *,

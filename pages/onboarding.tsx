@@ -258,7 +258,7 @@ export default function OnboardingPage() {
           </div>
 
           <div className="space-y-3">
-            <div className="grid size-12 animate-in place-items-center rounded-2xl bg-playful-gradient text-white shadow-lg shadow-brand/20 zoom-in-95 duration-300 fade-in motion-reduce:animate-none">
+            <div className="grid size-12 place-items-center rounded-2xl bg-brand text-brand-foreground shadow-sm">
               <Cake className="size-6" aria-hidden="true" />
             </div>
             <div className="space-y-2">
@@ -347,7 +347,7 @@ export default function OnboardingPage() {
                 <Button
                   type="submit"
                   disabled={isBusy}
-                  className="h-11 rounded-xl bg-brand text-base font-semibold text-brand-foreground shadow-lg shadow-brand/20 hover:bg-brand/90"
+                  className="h-11 rounded-xl bg-brand text-base font-semibold text-brand-foreground shadow-sm hover:bg-brand/90"
                 >
                   {isSubmitting ? (
                     <>

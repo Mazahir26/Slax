@@ -39,7 +39,7 @@ export default function Footer() {
         <div className="flex min-w-0 flex-col items-center gap-1 text-center text-sm text-muted-foreground sm:flex-row sm:gap-2.5 sm:text-left">
           <Link
             href="/"
-            className="font-display text-2xl font-semibold text-foreground transition-colors duration-200 hover:text-brand focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+            className="text-2xl font-bold tracking-tight text-foreground transition-colors duration-200 hover:text-brand focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
           >
             Slax
           </Link>

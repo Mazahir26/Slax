@@ -39,7 +39,7 @@ export default function Calender({
   if (sortedEvents.length === 0) {
     return (
       <div className="flex min-h-[55vh] w-full flex-col items-center justify-center gap-5 rounded-3xl border border-dashed border-border bg-card/50 p-6 text-center sm:p-10">
-        <span className="bg-playful-gradient flex size-16 items-center justify-center rounded-2xl text-white shadow-lg">
+        <span className="flex size-16 items-center justify-center rounded-2xl bg-brand text-brand-foreground shadow-sm">
           <Cake className="size-8" aria-hidden="true" />
         </span>
         <div className="space-y-2">

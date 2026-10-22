@@ -26,7 +26,7 @@ const features = [
     description:
       "Yes, it's open source and free, no catch. Not to mention ad-free. Find a bug or a missing feature? Reach out on GitHub.",
     Icon: Heart,
-    accent: "bg-accent-pink/10 text-accent-pink",
+    accent: "bg-brand/10 text-brand",
   },
   {
     title: "Intuitive design",
@@ -40,7 +40,7 @@ const features = [
     description:
       "Use as many devices as you like to access the same account. There is no limit on devices per account.",
     Icon: MonitorSmartphone,
-    accent: "bg-accent-pink/10 text-accent-pink",
+    accent: "bg-brand/10 text-brand",
   },
 ];
 
@@ -88,8 +88,7 @@ export default function About() {
             About Slax
           </p>
           <h1 className="mt-3 text-balance text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
-            Birthdays, handled with{" "}
-            <span className="text-playful-gradient">care.</span>
+            Birthdays, handled with <span className="text-brand">care.</span>
           </h1>
           <p className="mt-4 text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
             Slax is a tiny app with one job: making sure the people you love get

@@ -3,10 +3,10 @@ import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { getSession, signIn, useSession } from "next-auth/react";
-import { ArrowRight, BellRing, Heart, Mail, Sparkles } from "lucide-react";
+import { ArrowRight, BellRing, Heart, Mail } from "lucide-react";
 
+import HomePattern from "@/components/home-pattern";
 import Footer from "../components/layout/footer";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 const features = [
@@ -42,39 +42,22 @@ const Home: NextPage = () => {
       </Head>
 
       <section className="relative isolate flex min-h-[calc(100dvh-4rem)] flex-col justify-center overflow-hidden">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 -z-10"
-        >
-          <div className="absolute -top-32 -left-24 size-72 rounded-full bg-brand/20 blur-3xl sm:size-96" />
-          <div className="absolute top-10 -right-24 size-72 rounded-full bg-accent-pink/20 blur-3xl sm:size-96" />
-          <div className="absolute bottom-0 left-1/3 size-64 rounded-full bg-brand/10 blur-3xl" />
-        </div>
+        <HomePattern />
 
         <div className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
           <div className="mx-auto max-w-3xl text-center">
-            <Badge
-              variant="outline"
-              className="animate-in gap-1.5 rounded-full border-brand/30 bg-brand/5 px-3 py-1.5 text-xs font-medium text-brand fade-in slide-in-from-bottom-2 duration-500 motion-reduce:animate-none"
-            >
-              <Sparkles className="size-3.5" aria-hidden="true" />
-              Birthday reminders, on autopilot
-            </Badge>
-
-            <h1 className="mt-6 animate-in text-balance text-4xl font-bold tracking-tight fade-in slide-in-from-bottom-2 duration-500 delay-75 fill-mode-backwards motion-reduce:animate-none sm:text-5xl lg:text-6xl">
+            <h1 className="text-balance text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
               Never forget birthdays{" "}
-              <span className="text-playful-gradient">
-                of your loved ones.
-              </span>
+              <span className="text-brand">of your loved ones.</span>
             </h1>
 
-            <p className="mx-auto mt-5 max-w-2xl animate-in text-pretty text-base leading-relaxed text-muted-foreground fade-in slide-in-from-bottom-2 duration-500 delay-100 fill-mode-backwards motion-reduce:animate-none sm:text-lg">
+            <p className="mx-auto mt-5 max-w-2xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
               Create an account, add the birthdays you care about and forget
               about it. We&apos;ll email you three days early, so you can focus
               on planning the surprise. 😉
             </p>
 
-            <div className="mt-9 flex animate-in flex-wrap items-center justify-center gap-x-3 gap-y-2 fade-in slide-in-from-bottom-2 duration-500 delay-150 fill-mode-backwards motion-reduce:animate-none">
+            <div className="mt-9 flex flex-col items-center gap-3">
               {status === "authenticated" ? (
                 <Button
                   size="lg"
@@ -86,46 +69,13 @@ const Home: NextPage = () => {
                 </Button>
               ) : (
                 <>
-                  <div className="flex items-center gap-1.5">
-                    <Button
-                      size="lg"
-                      className="bg-brand text-brand-foreground hover:bg-brand/90 h-12 rounded-full px-7 text-base shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md motion-reduce:hover:translate-none!"
-                      onClick={() => signIn()}
-                    >
-                      Create an account
-                    </Button>
-
-                    <span
-                      aria-hidden="true"
-                      className="pointer-events-none mx-1 hidden items-center gap-1 select-none sm:flex"
-                    >
-                      <svg
-                        width="46"
-                        height="30"
-                        viewBox="0 0 46 30"
-                        fill="none"
-                        className="text-muted-foreground/70"
-                        aria-hidden="true"
-                      >
-                        <path
-                          d="M43 25c-10 3-24-1-33-13"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                        />
-                        <path
-                          d="M10 12 9 20M10 12l7 4"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      <span className="font-display -translate-y-2 rotate-6 text-2xl text-muted-foreground">
-                        it&apos;s free
-                      </span>
-                    </span>
-                  </div>
+                  <Button
+                    size="lg"
+                    className="bg-brand text-brand-foreground hover:bg-brand/90 h-12 rounded-full px-7 text-base shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md motion-reduce:hover:translate-none!"
+                    onClick={() => signIn()}
+                  >
+                    Create an account
+                  </Button>
 
                   <Button
                     asChild
@@ -138,11 +88,11 @@ const Home: NextPage = () => {
               )}
             </div>
 
-            <ul className="mx-auto mt-14 grid max-w-4xl animate-in gap-4 text-left fade-in slide-in-from-bottom-2 duration-500 delay-200 fill-mode-backwards motion-reduce:animate-none sm:mt-16 sm:grid-cols-3">
+            <ul className="mx-auto mt-14 grid max-w-4xl gap-4 text-left sm:mt-16 sm:grid-cols-3">
               {features.map(({ title, description, Icon }) => (
                 <li
                   key={title}
-                  className="group flex items-start gap-3 rounded-2xl border border-border/70 bg-card/70 p-5 shadow-sm backdrop-blur transition-all duration-200 hover:-translate-y-1 hover:shadow-md motion-reduce:hover:translate-none!"
+                  className="group flex items-start gap-3 rounded-2xl border border-border/70 bg-card p-5 transition-colors duration-200 hover:border-brand/30"
                 >
                   <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand transition-transform duration-200 group-hover:scale-110 motion-reduce:group-hover:scale-none!">
                     <Icon className="size-5" aria-hidden="true" />

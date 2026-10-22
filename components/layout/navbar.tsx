@@ -7,7 +7,6 @@ import { signOut, useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import {
-  Cake,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -119,15 +118,11 @@ export default function Navbar() {
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         <Link
           href="/"
-          className="group flex min-h-11 min-w-0 items-center gap-2 rounded-xl pr-2 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+          className="group flex min-h-11 min-w-0 items-center rounded-xl pr-2 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
           aria-label="Slax home"
         >
-          <span className="bg-playful-gradient flex size-9 shrink-0 items-center justify-center rounded-xl text-white shadow-sm transition-transform duration-200 group-hover:-rotate-6 motion-reduce:group-hover:rotate-none!">
-            <Cake className="size-5" aria-hidden="true" />
-          </span>
           <span className="truncate text-2xl font-bold tracking-tight transition-colors duration-200 group-hover:text-brand">
             Slax
-            <span className="text-playful-gradient">.</span>
           </span>
         </Link>
 
@@ -166,7 +161,7 @@ export default function Navbar() {
                   className="size-11 rounded-full p-0"
                   aria-label="Open account menu"
                 >
-                  <span className="bg-playful-gradient flex size-9 items-center justify-center rounded-full text-sm font-semibold text-white">
+                  <span className="flex size-9 items-center justify-center rounded-full bg-brand text-sm font-semibold text-brand-foreground">
                     {initial}
                   </span>
                 </Button>
@@ -305,7 +300,7 @@ export default function Navbar() {
               >
                 {status === "authenticated" ? (
                   <div className="mb-2 flex items-center gap-3 rounded-xl bg-muted/60 p-3">
-                    <span className="bg-playful-gradient flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand text-sm font-semibold text-brand-foreground">
                       {initial}
                     </span>
                     <div className="min-w-0">
