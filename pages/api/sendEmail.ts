@@ -570,7 +570,7 @@ export default async function handler(
     }
 
     // Partial delivery or an unrecorded final state is a failure for the
-    // caller: the workflow fails visibly, while claims still prevent
+    // caller: it sees a failure response, while claims still prevent
     // duplicates on the next hourly run.
     if (failed > 0 || finalizeFailed > 0) {
       return res.status(502).json({

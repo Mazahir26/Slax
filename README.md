@@ -2,7 +2,7 @@
 
 Slax is an open-source birthday reminder app. Add the birthdays you care about once, and Slax emails you before the big day so you never have to scramble for a gift or a plan again.
 
-Live demo: [slax.studio](https://slax.studio)
+Live demo: [slax.vercel.app](https://slax.vercel.app)
 
 ## Contents
 
@@ -80,8 +80,8 @@ Copy [`.env.example`](.env.example) to `.env.local` and fill in:
 | `EMAIL_SERVER_PORT` | Yes | SMTP port, for example `465`. Port `465` uses implicit TLS; other ports negotiate STARTTLS. |
 | `EMAIL_SERVER_USER` | Yes | SMTP username and the `From:` address for sign-in and reminder emails. |
 | `EMAIL_SERVER_PASSWORD` | Yes | SMTP password or Gmail app password. |
-| `key` | Yes for reminders | Shared secret that authorizes the reminder request. Store the same value as the `SLAX_CRON_KEY` GitHub Actions secret. |
-| `NEXT_PUBLIC_SITE_URL` | Optional | Canonical origin used by `/robots.txt` and `/sitemap.xml`. Takes precedence over `NEXTAUTH_URL`; falls back to `https://slax.studio`. |
+| `key` | Yes for reminders | Shared secret that authorizes the reminder request. |
+| `NEXT_PUBLIC_SITE_URL` | Optional | Canonical origin used by `/robots.txt` and `/sitemap.xml`. Takes precedence over `NEXTAUTH_URL`; falls back to `https://slax.vercel.app`. |
 
 `.env.local` and other local env files are git-ignored. Never commit real credentials.
 
@@ -145,7 +145,7 @@ MongoDB collections:
 
 ## Reminder schedule and timezone
 
-- Reminders are triggered **hourly** by [GitHub Actions](#cron-setup) (`0 * * * *`). The first run after a user's local midnight sends that day's email, so a reminder can arrive up to about **one hour after local midnight**.
+- Reminders are triggered **hourly** by your external scheduler (see [Cron setup](#cron-setup)). The first run after a user's local midnight sends that day's email, so a reminder can arrive up to about **one hour after local midnight**.
 - Each account stores an IANA timezone (for example `Europe/Berlin`) in its `timezone` field, and reminder matching uses that timezone.
 - Accounts created before timezone support have no `timezone` field. They keep working with the **Asia/Kolkata** fallback and require no migration.
 - The first time an existing user opens the dashboard, Slax stores their browser timezone once and shows a **“Timezone updated”** toast. Users who already have a timezone are not updated again, so an explicitly stored value is never overwritten.
@@ -166,49 +166,35 @@ Slax is **at-most-once by default**, not exactly-once. Raw SMTP cannot prove whe
 
 ## Cron setup
 
-The reminder endpoint is `POST /api/sendEmail`:
+Slax does not depend on a specific scheduler. Create an hourly HTTP cron job at [cron-job.org](https://cron-job.org), [Upstash](https://upstash.com), or any HTTP scheduler you prefer.
+
+Configure the job to send:
 
 ```http
-POST https://your-domain.com/api/sendEmail
+POST https://slax.vercel.app/api/sendEmail
 Content-Type: application/json
 
 { "key": "<value of key from .env.local>" }
 ```
 
-The repository ships [`.github/workflows/reminders.yml`](.github/workflows/reminders.yml), which calls this endpoint every hour.
-
-### GitHub Actions
-
-1. Push the repository to GitHub. The **Birthday reminders** workflow is picked up automatically.
-2. Add two **repository secrets** under **Settings → Secrets and variables → Actions**:
-   - `SLAX_URL` — production base URL, for example `https://slax.studio`. A trailing slash is fine.
-   - `SLAX_CRON_KEY` — must match the `key` environment variable on the server.
-3. Optionally run the workflow once from **Actions → Birthday reminders → Run workflow** to verify the setup.
-
 Notes:
 
+- Choose a scheduler whose request timeout is long enough for the endpoint.
+- Enable the scheduler's failure notifications if available.
 - The `key` body value must match the `key` environment variable. A missing or wrong key returns `401`.
-- The workflow runs at minute 0 of every hour and uses the `birthday-reminders` concurrency group, so overlapping runs queue instead of sending twice.
-- The hourly schedule is driven by **GitHub Actions**, not Vercel Cron. Vercel Hobby only allows once-per-day cron jobs, so the workflow in [`.github/workflows/reminders.yml`](.github/workflows/reminders.yml) is the supported scheduler.
-- GitHub Actions schedules can start a few minutes late under load; this is harmless because delivery is at-most-once.
-- Standard GitHub-hosted runners are free for **public** repositories. Private repositories use the account's included Actions minutes.
-- GitHub automatically disables scheduled workflows after **60 days** without repository activity in a public repository. Push a commit or run the workflow manually to re-enable it.
-- If one or more sends fail, or a sent/failed delivery cannot be finalized in MongoDB, the endpoint returns **`502`** with counts of sent, failed, finalization-failed and skipped emails, and the workflow fails visibly. A run with nothing to send returns `200`.
-
-### External cron (alternative)
-
-Any scheduler that can send a `POST` request with a JSON body can replace the GitHub Actions workflow — for example cron-job.org, cronhub, or a server crontab using `curl`. Call the endpoint hourly with the same `{"key":"..."}` body; delivery records keep repeated or overlapping runs idempotent.
+- Hourly is the default cadence. Running every 15 minutes is also safe: delivery claims are recorded per user, local day and email kind, so runs that find an existing claim skip that user.
+- If one or more sends fail, or a sent/failed delivery cannot be finalized in MongoDB, the endpoint returns **`502`** with counts of sent, failed, finalization-failed and skipped emails. A run with nothing to send returns `200`.
 
 ## Deployment
 
 1. Push the repository to GitHub.
 2. Import it into [Vercel](https://vercel.com/new).
-3. Add every variable from [`.env.example`](.env.example) in the project settings. Set `NEXTAUTH_URL` to your production URL (for example `https://slax.studio`).
-4. Deploy, then set the `SLAX_URL` and `SLAX_CRON_KEY` GitHub Actions secrets as described in [Cron setup](#cron-setup). The hourly workflow then triggers reminders.
+3. Add every variable from [`.env.example`](.env.example) in the project settings. Set `NEXTAUTH_URL` to your production URL (for example `https://slax.vercel.app`).
+4. After deploy, create the external hourly cron job as described in [Cron setup](#cron-setup).
 
 Any platform that can run `npm run build` and `npm run start` also works. No Postgres database or other service is required.
 
-`/robots.txt` and `/sitemap.xml` are generated at request time and always use the canonical origin: `NEXT_PUBLIC_SITE_URL`, then `NEXTAUTH_URL`, then `https://slax.studio`. In production the request `Host` header never changes those URLs.
+`/robots.txt` and `/sitemap.xml` are generated at request time and always use the canonical origin: `NEXT_PUBLIC_SITE_URL`, then `NEXTAUTH_URL`, then `https://slax.vercel.app`. In production the request `Host` header never changes those URLs.
 
 ### Dependency audit
 

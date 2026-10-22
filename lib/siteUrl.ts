@@ -6,7 +6,7 @@
  * Production always uses an explicitly configured origin or the fixed fallback.
  */
 
-export const FALLBACK_SITE_URL = "https://slax.studio";
+export const FALLBACK_SITE_URL = "https://slax.vercel.app";
 
 /** Loopback hostnames that are safe to trust while developing locally. */
 const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1"]);

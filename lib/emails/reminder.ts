@@ -38,7 +38,7 @@ export interface ReminderEmailData {
   upcoming: { name: string; daysUntil: number; dateLabel: string }[];
   /** Recipient timezone, e.g. `Asia/Kolkata`. */
   timezone: string;
-  /** Public site origin, e.g. `https://slax.studio`. */
+  /** Public site origin, e.g. `https://slax.vercel.app`. */
   siteUrl: string;
 }
 
@@ -49,7 +49,7 @@ export interface BirthdayEmailData {
   name: string;
   /** Recipient timezone, e.g. `Asia/Kolkata`. */
   timezone: string;
-  /** Public site origin, e.g. `https://slax.studio`. */
+  /** Public site origin, e.g. `https://slax.vercel.app`. */
   siteUrl: string;
 }
 
@@ -118,7 +118,7 @@ function normalizeSiteUrl(value: string): string {
   if (/^https?:\/\/[^\s"'<>]+$/i.test(withoutSlash)) {
     return withoutSlash;
   }
-  return "https://slax.studio";
+  return "https://slax.vercel.app";
 }
 
 /** Greeting handle derived from the recipient address. */
