@@ -149,7 +149,6 @@ interface PlannedSend {
  */
 const PRE_DELIVERY_ERROR_CODES = new Set([
   "EAUTH",
-  "ECONNECTION",
   "EENVELOPE",
   "EMESSAGE",
   "EDNS",
@@ -157,6 +156,17 @@ const PRE_DELIVERY_ERROR_CODES = new Set([
   "EAI_AGAIN",
   "EPROTO",
 ]);
+
+// `ECONNECTION` is deliberately absent above: nodemailer also emits it when the
+// connection closes during a pending send, after the server may already have
+// accepted the message. It must therefore keep the claim via
+// `markDeliveryFailed` and never release it for a retry. This guard fails fast
+// if it ever drifts back into the release allowlist.
+if (PRE_DELIVERY_ERROR_CODES.has("ECONNECTION")) {
+  throw new Error(
+    "sendEmail: ECONNECTION must stay ambiguous (claim kept, not released)"
+  );
+}
 
 /**
  * Nodemailer puts SMTP/network codes on `code`. Keep only a short, uppercase
