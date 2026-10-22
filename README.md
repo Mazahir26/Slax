@@ -74,14 +74,14 @@ Copy [`.env.example`](.env.example) to `.env.local` and fill in:
 | Variable | Required | Description |
 | --- | --- | --- |
 | `MONGODB_URI` | Yes | `mongodb://` or `mongodb+srv://` connection string. |
-| `NEXTAUTH_URL` | In production | Public base URL of the app. Optional for local development on `http://localhost:3000`; required in production. |
-| `NEXTAUTH_SECRET` | Yes in production | Random secret used to sign sessions and verification tokens (`openssl rand -base64 32`). |
+| `NEXTAUTH_URL` | Production only | Public base URL of the app. Local development works without it on `http://localhost:3000`. Set it to `https://slax.vercel.app` for **Production** only and leave it unset for **Preview** so NextAuth v4 auto-detects each preview deployment's domain. |
+| `NEXTAUTH_SECRET` | All environments | Random secret used to sign sessions and verification tokens (`openssl rand -base64 32`). Set a value for Production, Preview and local development. |
 | `EMAIL_SERVER_HOST` | Yes | SMTP host, for example `smtp.gmail.com`. |
 | `EMAIL_SERVER_PORT` | Yes | SMTP port, for example `465`. Port `465` uses implicit TLS; other ports negotiate STARTTLS. |
 | `EMAIL_SERVER_USER` | Yes | SMTP username and the `From:` address for sign-in and reminder emails. |
 | `EMAIL_SERVER_PASSWORD` | Yes | SMTP password or Gmail app password. |
 | `key` | Yes for reminders | Shared secret that authorizes the reminder request. |
-| `NEXT_PUBLIC_SITE_URL` | Optional | Canonical origin used by `/robots.txt` and `/sitemap.xml`. Takes precedence over `NEXTAUTH_URL`; falls back to `https://slax.vercel.app`. |
+| `NEXT_PUBLIC_SITE_URL` | Optional | Canonical origin used by `/robots.txt`, `/sitemap.xml` and email links. Takes precedence over `NEXTAUTH_URL`; falls back to the preview deployment URL on Vercel Preview, then `https://slax.vercel.app`. Set it only for Production if you want a fixed canonical origin. |
 
 `.env.local` and other local env files are git-ignored. Never commit real credentials.
 
@@ -189,12 +189,16 @@ Notes:
 
 1. Push the repository to GitHub.
 2. Import it into [Vercel](https://vercel.com/new).
-3. Add every variable from [`.env.example`](.env.example) in the project settings. Set `NEXTAUTH_URL` to your production URL (for example `https://slax.vercel.app`).
-4. After deploy, create the external hourly cron job as described in [Cron setup](#cron-setup).
+3. Add the variables from [`.env.example`](.env.example) in the project settings.
+4. Set `NEXTAUTH_URL=https://slax.vercel.app` for **Production** only. Leave `NEXTAUTH_URL` unset for **Preview** so NextAuth v4 auto-detects each preview deployment's domain from Vercel's system environment.
+5. Set `NEXT_PUBLIC_SITE_URL` only for **Production** if you want a fixed canonical origin. Preview deployments automatically use `VERCEL_BRANCH_URL` (the stable per-branch domain) and fall back to `VERCEL_URL` (the per-deployment domain).
+6. Set `NEXTAUTH_SECRET` for all environments, including Preview.
+7. Ensure Vercel **System Environment Variables** are enabled in the project settings. NextAuth's automatic URL detection for Preview depends on the system-provided `VERCEL` and `VERCEL_URL` variables.
+8. After deploy, create the external hourly cron job as described in [Cron setup](#cron-setup).
 
 Any platform that can run `npm run build` and `npm run start` also works. No Postgres database or other service is required.
 
-`/robots.txt` and `/sitemap.xml` are generated at request time and always use the canonical origin: `NEXT_PUBLIC_SITE_URL`, then `NEXTAUTH_URL`, then `https://slax.vercel.app`. In production the request `Host` header never changes those URLs.
+`/robots.txt` and `/sitemap.xml` are generated at request time and use the canonical origin: `NEXT_PUBLIC_SITE_URL`, then `NEXTAUTH_URL`, then the Vercel Preview origin (`VERCEL_BRANCH_URL` or `VERCEL_URL` when `VERCEL_ENV=preview`), then a loopback host during local development, then `https://slax.vercel.app`. In production the request `Host` header never changes those URLs, and Preview deployments never fall back to the production origin unless Vercel's system environment is unavailable.
 
 ### Dependency audit
 
