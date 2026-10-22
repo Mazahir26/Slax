@@ -5,7 +5,6 @@ import {
   ArrowRight,
   Mail,
   ShieldCheck,
-  Sparkles,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -33,7 +32,6 @@ type EmailFormValues = z.infer<typeof emailFormSchema>;
 
 const COPY = {
   login: {
-    badge: "Welcome back",
     heading: "Log in to Slax",
     description:
       "We're passwordless 😎 — we'll email you a secure sign-in link, so there's nothing to remember.",
@@ -43,7 +41,6 @@ const COPY = {
     linkHref: "/signup",
   },
   signup: {
-    badge: "Get started",
     heading: "Create your account",
     description:
       "Start remembering the birthdays that matter. We'll send you a secure sign-in link — no password needed.",
@@ -94,19 +91,13 @@ export function AuthForm({ mode }: AuthFormProps) {
   return (
     <AuthCard>
       <div className="space-y-6">
-        <div className="space-y-3">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-brand/10 px-3 py-1 text-xs font-semibold tracking-wide text-brand uppercase">
-            <Sparkles className="size-3.5" aria-hidden="true" />
-            {copy.badge}
-          </span>
-          <div className="space-y-2">
-            <h1 className="text-2xl font-bold tracking-tight text-balance sm:text-3xl">
-              {copy.heading}
-            </h1>
-            <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
-              {copy.description}
-            </p>
-          </div>
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold tracking-tight text-balance sm:text-3xl">
+            {copy.heading}
+          </h1>
+          <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
+            {copy.description}
+          </p>
         </div>
 
         <Form {...form}>
@@ -174,9 +165,9 @@ export function AuthForm({ mode }: AuthFormProps) {
           </Link>
         </p>
 
-        <div className="flex items-start gap-2.5 rounded-2xl bg-muted/60 p-3.5">
+        <div className="flex items-center gap-2.5 rounded-2xl bg-muted/60 p-3.5">
           <ShieldCheck
-            className="mt-0.5 size-4 shrink-0 text-brand"
+            className="size-4 shrink-0 text-brand"
             aria-hidden="true"
           />
           <p className="text-xs leading-relaxed text-muted-foreground">

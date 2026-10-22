@@ -5,7 +5,7 @@ import { useRouter } from "next/router";
 import { getSession, signIn, useSession } from "next-auth/react";
 import { ArrowRight, BellRing, Heart, Mail } from "lucide-react";
 
-import HomePattern from "@/components/home-pattern";
+import { PatternBackground } from "@/components/pattern-background";
 import Footer from "../components/layout/footer";
 import { Button } from "@/components/ui/button";
 
@@ -42,7 +42,7 @@ const Home: NextPage = () => {
       </Head>
 
       <section className="relative isolate flex min-h-[calc(100dvh-4rem)] flex-col justify-center overflow-hidden">
-        <HomePattern />
+        <PatternBackground />
 
         <div className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
           <div className="mx-auto max-w-3xl text-center">

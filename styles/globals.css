@@ -112,19 +112,19 @@
 }
 
 @layer utilities {
-  .home-pattern {
-    animation: home-pattern-drift 72s linear infinite;
+  .site-pattern {
+    animation: site-pattern-drift 36s linear infinite;
   }
 }
 
-@keyframes home-pattern-drift {
+@keyframes site-pattern-drift {
   0%,
   100% {
     transform: translate3d(0, 0, 0);
   }
 
   50% {
-    transform: translate3d(2px, -1px, 0);
+    transform: translate3d(-5px, 3px, 0);
   }
 }
 
@@ -134,7 +134,7 @@
     scroll-behavior: auto;
   }
 
-  .home-pattern {
+  .site-pattern {
     animation: none;
   }
 

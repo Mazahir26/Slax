@@ -1,9 +1,9 @@
 /**
- * A quiet, full-bleed texture for the home hero. The pattern is drawn with
- * `currentColor` so it follows the theme, and drifts a couple of pixels on a
- * very slow loop. Decorative only: hidden from assistive tech and inert.
+ * A quiet, full-bleed texture for large surfaces. The pattern is drawn with
+ * `currentColor` so it follows the theme, and drifts a few pixels on a very
+ * slow loop. Decorative only: hidden from assistive tech and inert.
  */
-export default function HomePattern() {
+export function PatternBackground() {
   return (
     <div
       aria-hidden="true"
@@ -12,11 +12,11 @@ export default function HomePattern() {
       <svg
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden="true"
-        className="home-pattern absolute -inset-2 h-[calc(100%+1rem)] w-[calc(100%+1rem)] opacity-[0.05] motion-reduce:animate-none"
+        className="site-pattern absolute -inset-2 h-[calc(100%+1rem)] w-[calc(100%+1rem)] opacity-[0.08] motion-reduce:animate-none dark:opacity-[0.05]"
       >
         <defs>
           <pattern
-            id="slax-home-pattern"
+            id="slax-site-pattern"
             width="44"
             height="44"
             patternUnits="userSpaceOnUse"
@@ -30,8 +30,10 @@ export default function HomePattern() {
             />
           </pattern>
         </defs>
-        <rect width="100%" height="100%" fill="url(#slax-home-pattern)" />
+        <rect width="100%" height="100%" fill="url(#slax-site-pattern)" />
       </svg>
     </div>
   );
 }
+
+export default PatternBackground;
