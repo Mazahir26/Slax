@@ -159,6 +159,24 @@ function relativeDayLabel(daysUntil: number): string {
   return `In ${days} days`;
 }
 
+/**
+ * Join names for prose: "Ada", "Ada and Bob", "Ada, Bob and Cleo".
+ * Very long lists keep the first few names and summarise the rest.
+ */
+function formatNameList(names: string[], limit = 5): string {
+  const cleaned = names
+    .map((name) => cleanText(name))
+    .filter((name) => name.length > 0);
+  if (cleaned.length === 0) return "";
+  if (cleaned.length === 1) return cleaned[0];
+  if (cleaned.length > limit) {
+    const shown = cleaned.slice(0, limit);
+    const remaining = cleaned.length - shown.length;
+    return `${shown.join(", ")} and ${remaining} more`;
+  }
+  return `${cleaned.slice(0, -1).join(", ")} and ${cleaned[cleaned.length - 1]}`;
+}
+
 /* -------------------------------------------------------------------------- */
 /* Content selection                                                          */
 /* -------------------------------------------------------------------------- */
@@ -216,10 +234,10 @@ function reminderPreheader(
   switch (variant) {
     case "today":
       return today.length === 1
-        ? `${cleanText(today[0])}'s birthday is today.`
-        : `${today.length} birthdays today, including ${cleanText(
-            today[0]
-          )}.`;
+        ? `${cleanText(today[0])}'s birthday is today. A quick note goes a long way.`
+        : `${formatNameList(
+            today
+          )} are celebrating today. A quick note goes a long way.`;
     case "tomorrow":
       return `${cleanText(upcoming[0].name)}'s birthday is tomorrow.`;
     case "upcoming":
@@ -260,23 +278,24 @@ function reminderIntro(
   switch (variant) {
     case "today":
       if (today.length === 1) {
-        return `${escapeHtml(
-          cleanText(today[0])
-        )} is celebrating today. A quick message now means more than a late one tomorrow.`;
+        return "A quick message today means more than a late one tomorrow.";
       }
-      return `${today.length} people on your list are celebrating today. There is still time to say something lovely.`;
+      return "A quick message to each of them goes a long way.";
     case "tomorrow":
-      return `${escapeHtml(
-        cleanText(upcoming[0].name)
-      )} is celebrating tomorrow. You are already ahead of the last-minute scramble.`;
+      return "You are already ahead of the last-minute scramble. A quick message today goes a long way.";
     case "upcoming":
       return upcoming.length === 1
-        ? `${escapeHtml(
-            cleanText(upcoming[0].name)
-          )} has a birthday in ${upcoming[0].daysUntil} days. A little notice goes a long way.`
-        : `${upcoming.length} birthdays are coming up in the next few days. Here is your head start.`;
-    case "mixed":
-      return "There is a birthday today, and a few more just around the corner. No scrambling required.";
+        ? "A little notice goes a long way. You have time to plan something thoughtful."
+        : `${upcoming.length} birthdays are coming up. Here is your head start.`;
+    case "mixed": {
+      const todayClause =
+        today.length === 1
+          ? "There is a birthday today"
+          : `There are ${today.length} birthdays today`;
+      const upcomingClause =
+        upcoming.length === 1 ? "one more" : `${upcoming.length} more`;
+      return `${todayClause}, and ${upcomingClause} just around the corner. No scrambling required.`;
+    }
     default:
       return "Nothing on the calendar just yet. We will let you know when a birthday gets close.";
   }
@@ -306,10 +325,7 @@ function buildReminderContent(data: ReminderEmailData): ReminderContent {
     variant,
     subject: reminderSubject(variant, today, upcoming),
     preheader: reminderPreheader(variant, today, upcoming),
-    eyebrow:
-      variant === "today" || variant === "mixed"
-        ? "Birthday reminder · today"
-        : "Birthday reminder",
+    eyebrow: "Birthday reminder",
     heading: reminderHeading(variant, today),
     intro: reminderIntro(variant, today, upcoming),
     today,
@@ -334,7 +350,6 @@ function todaySectionHtml(names: string[]): string {
   <tr>
     <td class="section-pad" style="padding:18px 20px 20px 20px;">
       <div style="font-family:${FONT};font-size:10px;line-height:14px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:${BRAND};">Today</div>
-      <div style="font-family:${FONT};font-size:15px;line-height:21px;font-weight:700;color:${BRAND_DARK};padding-top:5px;">Make sure you wish them today</div>
       ${rows}
     </td>
   </tr>
@@ -367,8 +382,7 @@ function upcomingSectionHtml(items: UpcomingBirthday[]): string {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;">
   <tr>
     <td style="padding:0 0 2px 0;">
-      <div style="font-family:${FONT};font-size:10px;line-height:14px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:${BRAND};">Next 3 days</div>
-      <div style="font-family:${FONT};font-size:15px;line-height:21px;font-weight:700;color:${INK};padding-top:5px;">Coming up</div>
+      <div style="font-family:${FONT};font-size:10px;line-height:14px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:${BRAND};">Coming up</div>
     </td>
   </tr>
   ${rows}

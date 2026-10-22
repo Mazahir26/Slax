@@ -143,7 +143,7 @@ export function signInEmailHtml({
                       </tr>
                       <tr>
                         <td align="center" style="font-size:0px;padding:10px 25px;padding-bottom:15px;word-break:break-word;">
-                          <div style="font-family:Helvetica,Arial, sans-serif;font-size:22px;font-weight:bold;line-height:1;text-align:center;color:#000000;">Hey there, Welcome to Slax.</div>
+                          <div style="font-family:Helvetica,Arial, sans-serif;font-size:22px;font-weight:bold;line-height:1;text-align:center;color:#000000;">Hey there — welcome to Slax.</div>
                         </td>
                       </tr>
                       <tr>
@@ -153,7 +153,7 @@ export function signInEmailHtml({
                       </tr>
                       <tr>
                         <td align="center" style="font-size:0px;padding:10px 25px;padding-bottom:15px;word-break:break-word;">
-                          <div style="font-family:Helvetica, sans-serif;font-size:15px;line-height:1;text-align:center;color:#000000;">As we promised here is the verification link.</div>
+                          <div style="font-family:Helvetica, sans-serif;font-size:15px;line-height:1;text-align:center;color:#000000;">As promised, here's your sign-in link.</div>
                         </td>
                       </tr>
                       <tr>
@@ -191,17 +191,17 @@ export function signInEmailHtml({
                     <tbody>
                       <tr>
                         <td align="center" style="font-size:0px;padding:10px 25px;padding-bottom:15px;word-break:break-word;">
-                          <div style="font-family:Helvetica, sans-serif;font-size:18px;line-height:1;text-align:center;color:#000000;">You didn't try to sign up?</div>
+                          <div style="font-family:Helvetica, sans-serif;font-size:18px;line-height:1;text-align:center;color:#000000;">Didn't request this email?</div>
                         </td>
                       </tr>
                       <tr>
                         <td align="center" style="font-size:0px;padding:10px 25px;padding-bottom:14px;word-break:break-word;">
-                          <div style="font-family:Helvetica, sans-serif;font-size:15px;line-height:1;text-align:center;color:#000000;">Then please ignore this email. This is an automated email, no further action is required.</div>
+                          <div style="font-family:Helvetica, sans-serif;font-size:15px;line-height:1;text-align:center;color:#000000;">You can safely ignore it. This is an automated message and no further action is needed.</div>
                         </td>
                       </tr>
                       <tr>
                         <td align="center" style="font-size:0px;padding:10px 25px;padding-bottom:10px;word-break:break-word;">
-                          <div style="font-family:Helvetica, sans-serif;font-size:15px;line-height:1;text-align:center;color:#000000;">©${new Date().getFullYear()} Slax. All rights reserved</div>
+                          <div style="font-family:Helvetica, sans-serif;font-size:15px;line-height:1;text-align:center;color:#000000;">© ${new Date().getFullYear()} Slax. All rights reserved.</div>
                         </td>
                       </tr>
                     </tbody>
