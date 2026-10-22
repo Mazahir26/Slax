@@ -1,146 +1,153 @@
-import {
-  Box,
-  Heading,
-  Container,
-  Text,
-  Button,
-  Stack,
-  Icon,
-  useColorModeValue,
-  createIcon,
-} from "@chakra-ui/react";
 import type { GetServerSideProps, NextPage } from "next";
-import { getSession, signIn, useSession } from "next-auth/react";
-import { useRouter } from "next/router";
-import Footer from "../components/layout/footer";
-import "@fontsource/caveat/400.css";
 import Head from "next/head";
+import Link from "next/link";
+import { useRouter } from "next/router";
+import { getSession, signIn, useSession } from "next-auth/react";
+import { ArrowRight, BellRing, Heart, Mail } from "lucide-react";
+
+import { PatternBackground } from "@/components/pattern-background";
+import Footer from "../components/layout/footer";
+import { Button } from "@/components/ui/button";
+
+const features = [
+  {
+    title: "Email reminders",
+    description: "Every birthday lands in your inbox, on all of your devices.",
+    Icon: Mail,
+  },
+  {
+    title: "3-day heads-up",
+    description: "A gentle nudge three days early, so you have time to plan.",
+    Icon: BellRing,
+  },
+  {
+    title: "Free forever",
+    description: "Open source, ad-free and no catch. Just birthdays.",
+    Icon: Heart,
+  },
+];
 
 const Home: NextPage = () => {
   const { status } = useSession();
   const router = useRouter();
-  const iconColor = useColorModeValue("gray.800", "gray.300");
+
   return (
     <>
       <Head>
-        <title>Slax </title>
-        <meta name="viewport" content="initial-scale=1.0, width=device-width" />
+        <title>Slax — Birthday reminders for the people you love</title>
+        <meta
+          name="description"
+          content="Create an account, add birthdays and forget about it. Slax emails you three days before every birthday so you can plan something special."
+        />
       </Head>
-      <Container h={["80vh", "80vh", "auto"]} maxW={"2xl"}>
-        <Stack
-          as={Box}
-          textAlign={"center"}
-          spacing={{ base: 8, md: 14 }}
-          py={{ base: "16", md: "32" }}
-        >
-          <Heading
-            fontWeight={600}
-            fontSize={{ base: "2xl", sm: "4xl", md: "6xl" }}
-            lineHeight={"110%"}
-          >
-            Never forget birthdays <br />
-            <Text
-              as={"span"}
-              bgClip="text"
-              bgGradient="linear(to-tr, #3494e6, #ec6ead)"
-            >
-              of your loved ones.
-            </Text>
-          </Heading>
-          <Text color={"gray.500"}>
-            You ask how? It&apos;s very easy create an account, add birthdays
-            and forget about it. We will make sure that you remember their
-            birthday, So you can focus on planing an surprise for them 😉.
-          </Text>
-          <Stack
-            direction={"column"}
-            spacing={3}
-            align={"center"}
-            alignSelf={"center"}
-            position={"relative"}
-          >
-            {status === "authenticated" ? (
-              <Button
-                colorScheme={"brand"}
-                bg={"brand.400"}
-                rounded={"full"}
-                px={6}
-                _hover={{
-                  bg: "brand.500",
-                }}
-                onClick={() => router.replace("/dashboard")}
-              >
-                Go to Dashboard
-              </Button>
-            ) : (
-              <>
-                <Button
-                  colorScheme={"brand"}
-                  bg={"brand.400"}
-                  rounded={"full"}
-                  px={6}
-                  _hover={{
-                    bg: "brand.500",
-                  }}
-                  onClick={() => signIn()}
-                >
-                  Create an Account
-                </Button>
-                <Button
-                  onClick={() => signIn()}
-                  variant={"link"}
-                  colorScheme={"brand"}
-                  size={"sm"}
-                >
-                  Have an account. Sign in instead?
-                </Button>
 
-                <Box display={["none", "initial"]}>
-                  <Icon
-                    as={Arrow}
-                    color={iconColor}
-                    w={71}
-                    position={"absolute"}
-                    right={-71}
-                    top={"10px"}
-                  />
-                  <Text
-                    fontSize={"lg"}
-                    fontFamily={"Caveat"}
-                    position={"absolute"}
-                    right={"-125px"}
-                    top={"-15px"}
-                    transform={"rotate(10deg)"}
+      <section className="relative isolate flex min-h-[calc(100dvh-4rem)] flex-col justify-center overflow-hidden">
+        <PatternBackground />
+
+        <div className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
+          <div className="mx-auto max-w-3xl text-center">
+            <h1 className="text-balance text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
+              Never forget birthdays{" "}
+              <span className="text-brand">of your loved ones.</span>
+            </h1>
+
+            <p className="mx-auto mt-5 max-w-2xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
+              Create an account, add the birthdays you care about and forget
+              about it. We&apos;ll email you three days early, so you can focus
+              on planning the surprise. 😉
+            </p>
+
+            <div className="mt-9 flex flex-col items-center gap-3">
+              {status === "authenticated" ? (
+                <Button
+                  size="lg"
+                  className="bg-brand text-brand-foreground hover:bg-brand/90 h-12 rounded-full px-7 text-base shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md motion-reduce:hover:translate-none!"
+                  onClick={() => router.push("/dashboard")}
+                >
+                  Go to Dashboard
+                  <ArrowRight aria-hidden="true" />
+                </Button>
+              ) : (
+                <>
+                  <div className="flex flex-col items-center">
+                    <Button
+                      size="lg"
+                      className="bg-brand text-brand-foreground hover:bg-brand/90 h-12 rounded-full px-7 text-base shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md motion-reduce:hover:translate-none!"
+                      onClick={() => signIn()}
+                    >
+                      Create an account
+                    </Button>
+
+                    <p className="mt-1 flex items-start gap-1 select-none">
+                      <svg
+                        width="34"
+                        height="26"
+                        viewBox="0 0 34 26"
+                        fill="none"
+                        aria-hidden="true"
+                        className="mt-0.5 text-muted-foreground/70"
+                      >
+                        <path
+                          d="M31 23C21 25 9 21 5 8"
+                          stroke="currentColor"
+                          strokeWidth="1.7"
+                          strokeLinecap="round"
+                        />
+                        <path
+                          d="M5 8 4 16M5 8l8 3"
+                          stroke="currentColor"
+                          strokeWidth="1.7"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      <span className="font-display -rotate-3 text-2xl leading-none text-muted-foreground">
+                        it&apos;s free
+                      </span>
+                    </p>
+                  </div>
+
+                  <Button
+                    asChild
+                    variant="ghost"
+                    className="h-11 rounded-full px-4 text-sm font-medium text-muted-foreground hover:text-foreground"
                   >
-                    its free
-                  </Text>
-                </Box>
-              </>
-            )}
-          </Stack>
-        </Stack>
-      </Container>
+                    <Link href="/login">Have an account? Sign in</Link>
+                  </Button>
+                </>
+              )}
+            </div>
+
+            <ul className="mx-auto mt-14 grid max-w-4xl gap-4 text-left sm:mt-16 sm:grid-cols-3">
+              {features.map(({ title, description, Icon }) => (
+                <li
+                  key={title}
+                  className="group flex items-start gap-3 rounded-2xl border border-border/70 bg-card p-5 transition-colors duration-200 hover:border-brand/30"
+                >
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand transition-transform duration-200 group-hover:scale-110 motion-reduce:group-hover:scale-none!">
+                    <Icon className="size-5" aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-semibold">{title}</p>
+                    <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                      {description}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
       <Footer />
     </>
   );
 };
 
-const Arrow = createIcon({
-  displayName: "Arrow",
-  viewBox: "0 0 72 24",
-  path: (
-    <path
-      fillRule="evenodd"
-      clipRule="evenodd"
-      d="M0.600904 7.08166C0.764293 6.8879 1.01492 6.79004 1.26654 6.82177C2.83216 7.01918 5.20326 7.24581 7.54543 7.23964C9.92491 7.23338 12.1351 6.98464 13.4704 6.32142C13.84 6.13785 14.2885 6.28805 14.4722 6.65692C14.6559 7.02578 14.5052 7.47362 14.1356 7.6572C12.4625 8.48822 9.94063 8.72541 7.54852 8.7317C5.67514 8.73663 3.79547 8.5985 2.29921 8.44247C2.80955 9.59638 3.50943 10.6396 4.24665 11.7384C4.39435 11.9585 4.54354 12.1809 4.69301 12.4068C5.79543 14.0733 6.88128 15.8995 7.1179 18.2636C7.15893 18.6735 6.85928 19.0393 6.4486 19.0805C6.03792 19.1217 5.67174 18.8227 5.6307 18.4128C5.43271 16.4346 4.52957 14.868 3.4457 13.2296C3.3058 13.0181 3.16221 12.8046 3.01684 12.5885C2.05899 11.1646 1.02372 9.62564 0.457909 7.78069C0.383671 7.53862 0.437515 7.27541 0.600904 7.08166ZM5.52039 10.2248C5.77662 9.90161 6.24663 9.84687 6.57018 10.1025C16.4834 17.9344 29.9158 22.4064 42.0781 21.4773C54.1988 20.5514 65.0339 14.2748 69.9746 0.584299C70.1145 0.196597 70.5427 -0.0046455 70.931 0.134813C71.3193 0.274276 71.5206 0.70162 71.3807 1.08932C66.2105 15.4159 54.8056 22.0014 42.1913 22.965C29.6185 23.9254 15.8207 19.3142 5.64226 11.2727C5.31871 11.0171 5.26415 10.5479 5.52039 10.2248Z"
-      fill="currentColor"
-    />
-  ),
-});
-
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const session = await getSession(context);
-  // context.res.writeHead(401, { Location: "/dashboard" });
+
   if (session) {
     return {
       redirect: {
@@ -149,6 +156,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       },
     };
   }
+
   return {
     props: {},
   };

@@ -1,9 +1,22 @@
-import { Heading, Flex, Button } from "@chakra-ui/react";
+import { useMemo } from "react";
+import { Cake, Plus } from "lucide-react";
 import moment from "moment";
-import { useEffect, useState } from "react";
+
+import { Button } from "./ui/button";
 import Agenda from "./Agenda";
 import Month from "./Monthly";
-import { event } from "./types";
+import type { CalendarView, event } from "./types";
+
+/** Sort by calendar month/day, ignoring the birth year. */
+function sortByBirthday(a: event, b: event) {
+  const monthDifference = a.date.month() - b.date.month();
+  if (monthDifference !== 0) return monthDifference;
+
+  const dayDifference = a.date.date() - b.date.date();
+  if (dayDifference !== 0) return dayDifference;
+
+  return a.name.localeCompare(b.name);
+}
 
 export default function Calender({
   events,
@@ -14,57 +27,51 @@ export default function Calender({
 }: {
   events: event[];
   year: moment.Moment;
-  onClickEvent: Function;
-  view: "month" | "agenda";
-  onClickAddBirthday: Function;
+  onClickEvent: (id: string) => void;
+  view: CalendarView;
+  onClickAddBirthday: () => void;
 }) {
-  const [sortedArray, setSortedArray] = useState(
-    events.sort((a, b) =>
-      moment(a.date)
-        .set("year", moment().year())
-        .diff(moment(b.date).set("year", moment().year()))
-    )
+  const sortedEvents = useMemo(
+    () => [...events].sort(sortByBirthday),
+    [events]
   );
 
-  useEffect(() => {
-    setSortedArray(
-      events.sort((a, b) => {
-        return moment(a.date).diff(b.date);
-      })
-    );
-  }, [events]);
-
-  if (sortedArray.length === 0) {
+  if (sortedEvents.length === 0) {
     return (
-      <Flex
-        w="full"
-        h="full"
-        flexDirection={"column"}
-        justifyContent={"center"}
-        alignItems="center"
-      >
-        <Heading textAlign={"center"} mb="7" py="4" size="lg">
-          Looks like you haven&apos;t added a birthday yet 🤔
-        </Heading>
+      <div className="flex min-h-[55vh] w-full flex-col items-center justify-center gap-5 rounded-3xl border border-dashed border-border bg-card/50 p-6 text-center sm:p-10">
+        <span className="flex size-16 items-center justify-center rounded-2xl bg-brand text-brand-foreground shadow-sm">
+          <Cake className="size-8" aria-hidden="true" />
+        </span>
+        <div className="space-y-2">
+          <h2 className="font-display text-3xl leading-tight font-semibold text-foreground sm:text-4xl">
+            Looks like you haven&apos;t added a birthday yet 🤔
+          </h2>
+          <p className="mx-auto max-w-md text-sm text-muted-foreground sm:text-base">
+            Add someone special and we&apos;ll help you remember their big day,
+            year after year.
+          </p>
+        </div>
         <Button
-          boxShadow={"lg"}
-          colorScheme={"brand"}
-          variant="outline"
-          onClick={() => onClickAddBirthday()}
+          type="button"
+          onClick={onClickAddBirthday}
+          className="h-11 rounded-full bg-brand px-5 text-brand-foreground shadow-sm hover:bg-brand/90"
         >
-          Add Birthday?
+          <Plus aria-hidden="true" />
+          Add your first birthday
         </Button>
-      </Flex>
+      </div>
     );
   }
-  if (view == "agenda") {
+
+  if (view === "agenda") {
     return (
-      <Agenda events={sortedArray} onClickEvent={onClickEvent} year={year} />
+      <Agenda events={sortedEvents} onClickEvent={onClickEvent} year={year} />
     );
   }
+
   return (
     <Month
-      events={sortedArray}
+      events={sortedEvents}
       onClickEvent={onClickEvent}
       year={year}
       onClickAddBirthday={onClickAddBirthday}

@@ -1,94 +1,71 @@
-import { ObjectId } from "mongodb";
-import { getSession } from "next-auth/react";
-import { NextApiRequest, NextApiResponse } from "next/types";
-import client from "../../lib/mongodb";
+import type { ObjectId } from "mongodb";
+import type { NextApiRequest, NextApiResponse } from "next";
+import { methodNotAllowed, requireSession, sendError } from "../../lib/api";
+import { getDb } from "../../lib/mongodb";
+
+type UserDocument = {
+  _id: ObjectId;
+  email: string;
+  isNew?: boolean;
+};
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const cookie = req.headers.cookie;
-  const session = cookie
-    ? await getSession({ req: { headers: { cookie } } as any })
-    : null;
-  if (!session) {
-    return res.status(401).send({
-      msg: "You need to be authenticated",
-      code: 401,
-    });
+  if (req.method !== "GET" && req.method !== "POST") {
+    return methodNotAllowed(res, req.method, ["GET", "POST"]);
   }
-  if (!session?.user?.email)
-    return res.status(401).send({
-      msg: "Invalid Token",
-      code: 401,
-    });
+
+  const session = await requireSession(req, res);
+  if (!session) return;
 
   try {
-    const cli = await client;
-    const database = cli.db("auth");
-    const users = database.collection<{
-      _id: ObjectId;
-      email: string;
-      emailVerified: string;
-      isNew?: boolean;
-    }>("users");
+    const users = (await getDb("auth")).collection<UserDocument>("users");
+    const email = session.user.email;
+
     if (req.method === "GET") {
-      const response = await users.findOne(
-        {
-          email: session.user.email,
-        },
-        {
-          projection: {
-            _id: 1,
-            email: 1,
-            isNew: 1,
-          },
-        }
+      const user = await users.findOne(
+        { email },
+        { projection: { _id: 1, email: 1, isNew: 1 } }
       );
-      if (!response) {
-        return res.status(500).json({
-          msg: "Oops something went wrong",
-          code: 500,
-        });
+
+      if (!user) {
+        return sendError(res, 404, "User not found");
       }
-      if (response.isNew === false) {
-        return res.status(200).json({
-          email: response.email,
-          isNew: false,
-        });
-      } else {
-        return res.status(200).json({
-          email: response.email,
-          isNew: true,
-        });
-      }
-    } else if (req.method === "POST") {
-      const result = await users.updateOne(
-        {
-          email: session.user.email,
-        },
-        {
-          $set: {
-            isNew: false,
-          },
-        },
-        {
-          upsert: false,
-        }
-      );
-      if (!result.acknowledged) {
-        throw new Error("Not Acknowledged");
-      }
+
       return res.status(200).json({
-        msg: "Done",
-        code: 200,
+        email: user.email,
+        isNew: user.isNew !== false,
       });
     }
-  } catch (error: any) {
-    console.log(error);
-    return res.status(500).json({
-      msg: "Oops something went wrong",
-      code: 500,
+
+    const result = await users.updateOne(
+      { email },
+      {
+        $set: {
+          isNew: false,
+        },
+      },
+      {
+        upsert: false,
+      }
+    );
+
+    if (!result.acknowledged) {
+      throw new Error("Onboarding update was not acknowledged.");
+    }
+
+    if (result.matchedCount === 0) {
+      return sendError(res, 404, "User not found");
+    }
+
+    return res.status(200).json({
+      msg: "Done",
+      code: 200,
     });
+  } catch (error) {
+    console.error("Failed to load or update the user.", error);
+    return sendError(res, 500, "Oops something went wrong");
   }
 }

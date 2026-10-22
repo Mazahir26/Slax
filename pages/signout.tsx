@@ -1,70 +1,129 @@
+import Link from "next/link";
 import {
-  Flex,
-  Box,
-  Stack,
-  Heading,
-  Text,
-  useColorModeValue,
-  useDisclosure,
-  Spinner,
-} from "@chakra-ui/react";
+  ArrowLeft,
+  CheckCircle2,
+  Home,
+  LogOut,
+} from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
-import Head from "next/head";
-import { useEffect } from "react";
-import Footer from "../components/layout/footer";
-import WarningModal from "../components/warningModal";
+import { useState } from "react";
+import { toast } from "sonner";
 
-export default function Verification() {
-  const session = useSession();
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const color = useColorModeValue("white", "gray.700");
-  useEffect(() => {
-    if (session.status == "authenticated") {
-      onOpen();
+import {
+  AuthCard,
+  AuthCardSkeleton,
+  AuthShell,
+} from "@/components/auth/auth-shell";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+
+export default function SignOutPage() {
+  const { status } = useSession();
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  async function handleSignOut() {
+    if (isSigningOut) return;
+
+    setIsSigningOut(true);
+    try {
+      await signOut({ callbackUrl: "/signout" });
+    } catch (error) {
+      console.error(error);
+      toast.error("We couldn't sign you out.", {
+        description: "Please check your connection and try again.",
+      });
+      setIsSigningOut(false);
     }
-  });
-  if (session.status == "authenticated") {
-    return (
-      <Flex minH={"85vh"} align={"center"} justify={"center"}>
-        <WarningModal
-          isOpen={isOpen}
-          onClose={onClose}
-          type={"SignOut"}
-          Callback={() => signOut({ callbackUrl: "/signout" })}
-        />
-        <Spinner
-          size={"xl"}
-          emptyColor="gray.300"
-          color="brand.500"
-          speed="0.8s"
-          thickness="4px"
-        />
-      </Flex>
-    );
   }
+
   return (
-    <>
-      <Head>
-        <title>Bye Bye | Slax </title>
-      </Head>
-      <Flex minH={"85vh"} align={"center"} justify={"center"}>
-        <Stack spacing={8} mx={"auto"} maxW={"lg"} py={12} px={6}>
-          <Stack align={"center"}>
-            <Heading textAlign={"center"} fontSize={"4xl"}>
-              Successfully Signed Out.
-            </Heading>
-            <Text fontSize={"lg"} color={"gray.600"}>
-              Bye, Visit again 👋
-            </Text>
-          </Stack>
-          <Box rounded={"lg"} bg={color} boxShadow={"lg"} p={4}>
-            <Text fontSize={"sm"} textAlign="center">
-              Thank you, Any feedback or suggestions will be appreciated.
-            </Text>
-          </Box>
-        </Stack>
-      </Flex>
-      <Footer />
-    </>
+    <AuthShell
+      title="Sign out | Slax"
+      description="Sign out of your Slax account or head back to your dashboard."
+    >
+      {status === "loading" ? (
+        <AuthCardSkeleton rows={1} />
+      ) : status === "authenticated" ? (
+        <AuthCard className="text-center">
+          <div className="mx-auto grid size-16 animate-in place-items-center rounded-2xl bg-destructive/10 text-destructive zoom-in-95 duration-300 fade-in motion-reduce:animate-none">
+            <LogOut className="size-8" aria-hidden="true" />
+          </div>
+
+          <h1 className="mt-6 text-2xl font-bold tracking-tight text-balance sm:text-3xl">
+            Sign out of Slax?
+          </h1>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base">
+            You&apos;ll need to request a new sign-in link the next time you
+            visit. Your birthdays will be waiting for you.
+          </p>
+
+          <div className="mt-7 grid gap-3">
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleSignOut}
+              disabled={isSigningOut}
+              className="h-11 w-full rounded-xl text-base font-semibold"
+            >
+              {isSigningOut ? (
+                <>
+                  <Spinner aria-hidden="true" />
+                  Signing out…
+                </>
+              ) : (
+                <>
+                  <LogOut className="size-4" aria-hidden="true" />
+                  Yes, sign out
+                </>
+              )}
+            </Button>
+            <Button
+              asChild
+              variant="outline"
+              className="h-11 w-full rounded-xl"
+            >
+              <Link href="/dashboard">
+                <ArrowLeft className="size-4" aria-hidden="true" />
+                Stay signed in
+              </Link>
+            </Button>
+          </div>
+        </AuthCard>
+      ) : (
+        <AuthCard className="text-center sm:p-10">
+          <div className="mx-auto grid size-16 animate-in place-items-center rounded-2xl bg-brand/10 text-brand zoom-in-95 duration-300 fade-in motion-reduce:animate-none">
+            <CheckCircle2 className="size-8" aria-hidden="true" />
+          </div>
+
+          <h1 className="mt-6 text-2xl font-bold tracking-tight text-balance sm:text-3xl">
+            You&apos;re signed out
+          </h1>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base">
+            Bye for now 👋 Thanks for stopping by. We&apos;ll keep an eye on the
+            dates that matter until you&apos;re back.
+          </p>
+
+          <div className="mt-7 grid gap-3">
+            <Button asChild className="h-11 w-full rounded-xl bg-brand text-base font-semibold text-brand-foreground hover:bg-brand/90">
+              <Link href="/">
+                <Home className="size-4" aria-hidden="true" />
+                Back to home
+              </Link>
+            </Button>
+            <Button
+              asChild
+              variant="outline"
+              className="h-11 w-full rounded-xl"
+            >
+              <Link href="/login">Log in again</Link>
+            </Button>
+          </div>
+
+          <p className="mt-6 text-xs leading-relaxed text-muted-foreground">
+            Any feedback or suggestions? We&apos;d love to hear them.
+          </p>
+        </AuthCard>
+      )}
+    </AuthShell>
   );
 }

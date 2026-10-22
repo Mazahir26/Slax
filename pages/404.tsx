@@ -1,36 +1,48 @@
-import { Box, Heading, Text, Button } from "@chakra-ui/react";
 import Head from "next/head";
 import Image from "next/image";
-import router from "next/router";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+
 import Footer from "../components/layout/footer";
+import { Button } from "@/components/ui/button";
 
 export default function NotFound() {
   return (
     <>
       <Head>
-        <title>404 Not Found | Slax </title>
+        <title>404 Not Found | Slax</title>
+        <meta name="description" content="The page you were looking for could not be found." />
       </Head>
-      <Box textAlign="center" py={10} px={6}>
+
+      <section className="flex min-h-[calc(100dvh-4rem)] animate-in flex-col items-center justify-center px-4 py-16 text-center fade-in slide-in-from-bottom-2 duration-500 motion-reduce:animate-none sm:px-6">
         <Image
+          src="/404.svg"
           alt="404 Not Found"
-          src={"/404.svg"}
-          width={"400px"}
-          height="400px"
-        ></Image>
-        <Text fontSize="18px" mt={3} mb={2}>
-          Page Not Found
-        </Text>
-        <Text color={"gray.500"} mb={6}>
-          {`Are you lost? let me help you.`}
-        </Text>
+          width={320}
+          height={320}
+          priority
+          className="h-auto w-full max-w-[240px] sm:max-w-[320px]"
+        />
+        <p className="mt-6 text-sm font-semibold tracking-wide text-brand uppercase">
+          404
+        </p>
+        <h1 className="mt-2 text-balance text-3xl font-bold tracking-tight sm:text-4xl">
+          Page not found
+        </h1>
+        <p className="mt-3 max-w-md text-pretty text-muted-foreground">
+          Are you lost? Let me help you find your way back home.
+        </p>
         <Button
-          colorScheme="brand"
-          variant="outline"
-          onClick={() => router.push("/")}
+          asChild
+          className="bg-brand text-brand-foreground hover:bg-brand/90 mt-8 h-11 rounded-full px-6"
         >
-          Go to Home
+          <Link href="/">
+            <ArrowLeft aria-hidden="true" />
+            Go to Home
+          </Link>
         </Button>
-      </Box>
+      </section>
+
       <Footer />
     </>
   );

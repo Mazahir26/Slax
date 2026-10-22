@@ -1,241 +1,425 @@
-import { Icon, MoonIcon, SunIcon } from "@chakra-ui/icons";
-import {
-  Flex,
-  Button,
-  Box,
-  Heading,
-  Spacer,
-  useColorMode,
-  IconButton,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  Link,
-  Spinner,
-  useToast,
-  useDisclosure,
-} from "@chakra-ui/react";
-import { CgProfile } from "react-icons/cg";
-import { useSession, signIn, signOut } from "next-auth/react";
+"use client";
+
+import { useState, useSyncExternalStore } from "react";
+import Link from "next/link";
 import { useRouter } from "next/router";
-import { AiOutlineClose, AiOutlineMenu } from "react-icons/ai";
-import "@fontsource/quicksand/700.css";
-import WarningModal from "../warningModal";
-import Loading from "./loading";
-// import NextLink from "next/link";
+import { signOut, useSession } from "next-auth/react";
+import { useTheme } from "next-themes";
+import { toast } from "sonner";
+import {
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Moon,
+  Sun,
+  Trash2,
+  UserRound,
+  X,
+} from "lucide-react";
+
+import WarningModal from "@/components/warningModal";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+
+const subscribeToNothing = () => () => {};
+
 export default function Navbar() {
   const { data: session, status } = useSession();
-  const { toggleColorMode, colorMode } = useColorMode();
   const router = useRouter();
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const {
-    isOpen: isLoading,
-    onOpen: Load,
-    onClose: stopLoading,
-  } = useDisclosure();
+  const { resolvedTheme, setTheme } = useTheme();
 
-  const {
-    isOpen: delModalIsOpen,
-    onOpen: delModalOnOpen,
-    onClose: delModalOnClose,
-  } = useDisclosure();
+  const mounted = useSyncExternalStore(
+    subscribeToNothing,
+    () => true,
+    () => false,
+  );
 
-  const toast = useToast();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [signOutOpen, setSignOutOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  async function DeleteAccount() {
-    if (status == "authenticated") {
-      Load();
-      try {
-        const response = await fetch("/api/deleteAccount", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-        if (response.status !== 201) {
-          throw Error(response.status.toString());
-        }
-        toast({
-          position: "bottom-left",
-          title: "Deleted Successfully",
-          status: "success",
-          duration: 5000,
-          isClosable: true,
-        });
-        signOut({ callbackUrl: "/" });
-      } catch (err) {
-        console.log(err);
-        toast({
-          position: "bottom-left",
-          title: "Oops something went wrong!",
-          status: "error",
-          description: `Try again later..:(`,
-          duration: 5000,
-          isClosable: true,
-        });
-      } finally {
-        stopLoading();
+  const isDark = mounted && resolvedTheme === "dark";
+
+  const toggleTheme = () => {
+    setTheme(resolvedTheme === "dark" ? "light" : "dark");
+  };
+
+  const displayName =
+    session?.user?.name?.trim() || session?.user?.email || "Your account";
+  const email = session?.user?.email ?? "";
+  const initial = displayName.charAt(0).toUpperCase() || "S";
+
+  const closeMobile = () => setMobileOpen(false);
+
+  const handleSignOut = () => {
+    setSignOutOpen(false);
+    void signOut({ callbackUrl: "/signout" });
+  };
+
+  const handleDeleteAccount = async () => {
+    if (isDeleting) return;
+    setIsDeleting(true);
+
+    try {
+      const response = await fetch("/api/deleteAccount", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Delete account failed with ${response.status}`);
       }
-    }
-  }
-  return (
-    <Box alignSelf={"stretch"} alignItems={"stretch"}>
-      <Flex
-        bg={colorMode === "dark" ? "gray.600" : "white"}
-        boxShadow="lg"
-        alignItems={"center"}
-      >
-        <Box as="button" px={"5"} py={"4"} onClick={() => router.push("/")}>
-          <Heading fontFamily={"quicksand"} size={"lg"}>
-            Slax
-          </Heading>
-        </Box>
 
-        <Spacer />
-        {status === "loading" ? (
-          <Spinner
-            size={"md"}
-            emptyColor="gray.300"
-            color="brand.500"
-            speed="0.8s"
-            thickness="2px"
-          />
-        ) : session ? (
-          <Menu variant={"ghost"} colorScheme={"brand"}>
-            {({ isOpen }) => (
-              <>
-                <MenuButton
-                  aria-label="Options"
-                  bg="transparent"
-                  color={
-                    isOpen
-                      ? "brand.500"
-                      : colorMode === "dark"
-                      ? "gray.100"
-                      : "gray.800"
-                  }
-                  icon={<Icon w="6" h="6" as={CgProfile} />}
-                  as={IconButton}
-                  mx="4"
-                ></MenuButton>
-                <MenuList>
-                  <MenuItem
-                    onClick={() => {
-                      onOpen();
-                    }}
-                  >
-                    Sign Out
-                  </MenuItem>
-                  <MenuItem onClick={() => toggleColorMode()}>
-                    Change Theme
-                  </MenuItem>
-                  <MenuItem onClick={() => router.push("/about")}>
-                    About
-                  </MenuItem>
-                  <MenuItem onClick={delModalOnOpen} color={"red.400"}>
-                    Delete Account
-                  </MenuItem>
-                </MenuList>
-              </>
-            )}
-          </Menu>
-        ) : (
-          <>
-            <Box display={["initial", "none"]}>
-              <Menu variant={"ghost"} colorScheme={"brand"}>
-                {({ isOpen }) => (
-                  <>
-                    <MenuButton
-                      aria-label="Options"
-                      bg="transparent"
-                      color={
-                        isOpen
-                          ? "brand.500"
-                          : colorMode === "dark"
-                          ? "gray.100"
-                          : "gray.800"
-                      }
-                      icon={
-                        <Icon
-                          w="6"
-                          h="6"
-                          as={isOpen ? AiOutlineClose : AiOutlineMenu}
-                        />
-                      }
-                      as={IconButton}
-                      mx="4"
-                    />
-                    <MenuList>
-                      <MenuItem
-                        onClick={() => {
-                          if (router.pathname === "/signup")
-                            router.push("/login");
-                          else router.push("/signup");
-                        }}
-                      >
-                        {router.pathname === "/signup" ? "Login" : "Sign Up"}
-                      </MenuItem>
-                      <MenuItem onClick={() => toggleColorMode()}>
-                        Change Theme
-                      </MenuItem>
-                      <MenuItem onClick={() => router.push("/about")}>
-                        About
-                      </MenuItem>
-                    </MenuList>
-                  </>
-                )}
-              </Menu>
-            </Box>
-            <Flex flexDirection={"row"} display={["none", "flex"]}>
-              <Button
-                onClick={() => {
-                  if (router.pathname === "/signup") router.push("/login");
-                  else router.push("/signup");
-                }}
-                variant="solid"
-                colorScheme={"brand"}
-                fontSize={["sm", "md"]}
+      toast.success("Account deleted", {
+        description: "Your account and all of your data have been removed.",
+      });
+      setDeleteOpen(false);
+      await signOut({ callbackUrl: "/" });
+    } catch (error) {
+      console.error(error);
+      toast.error("Oops, something went wrong!", {
+        description: "We couldn't delete your account. Please try again later.",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const themeIcon = mounted ? (
+    isDark ? (
+      <Sun aria-hidden="true" />
+    ) : (
+      <Moon aria-hidden="true" />
+    )
+  ) : (
+    <span className="size-4" aria-hidden="true" />
+  );
+
+  return (
+    <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+        <Link
+          href="/"
+          className="group flex min-h-11 min-w-0 items-center rounded-xl pr-2 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+          aria-label="Slax home"
+        >
+          <span className="truncate text-2xl font-bold tracking-tight transition-colors duration-200 group-hover:text-brand">
+            Slax
+          </span>
+        </Link>
+
+        <nav
+          aria-label="Primary"
+          className="hidden items-center gap-1 md:flex"
+        >
+          <Button
+            asChild
+            variant="ghost"
+            className="h-11 rounded-full px-4 text-sm font-medium transition-colors duration-200"
+          >
+            <Link href="/about">About</Link>
+          </Button>
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-11 rounded-full"
+            aria-label="Toggle theme"
+            onClick={toggleTheme}
+          >
+            {themeIcon}
+          </Button>
+
+          {status === "loading" ? (
+            <Skeleton className="ml-2 size-9 rounded-full" />
+          ) : status === "authenticated" ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="size-11 rounded-full p-0"
+                  aria-label="Open account menu"
+                >
+                  <span className="flex size-9 items-center justify-center rounded-full bg-brand text-sm font-semibold text-brand-foreground">
+                    {initial}
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                sideOffset={8}
+                className="w-60 rounded-xl p-1.5"
               >
-                {router.pathname === "/signup" ? "Login" : "Sign Up"}
-              </Button>
-              <Button
-                mx="2"
-                onClick={() => router.push("/about")}
-                variant="ghost"
-                colorScheme={"brand"}
-              >
-                About
-              </Button>
-              <Box mx="2">
-                <IconButton
-                  variant={"ghost"}
-                  colorScheme={"brand"}
-                  aria-label="Toggle dark mode"
-                  icon={colorMode === "dark" ? <SunIcon /> : <MoonIcon />}
-                  onClick={() => toggleColorMode()}
-                  _focus={{
-                    boxShadow: "outline",
+                <DropdownMenuLabel className="px-2.5 py-2">
+                  <span className="block truncate text-sm font-semibold">
+                    {displayName}
+                  </span>
+                  {email ? (
+                    <span className="block truncate text-xs font-normal text-muted-foreground">
+                      {email}
+                    </span>
+                  ) : null}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="min-h-11 cursor-pointer gap-2.5 rounded-lg px-2.5"
+                  onSelect={() => router.push("/dashboard")}
+                >
+                  <LayoutDashboard aria-hidden="true" />
+                  Dashboard
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="min-h-11 cursor-pointer gap-2.5 rounded-lg px-2.5"
+                  onSelect={() => router.push("/about")}
+                >
+                  <UserRound aria-hidden="true" />
+                  About
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="min-h-11 cursor-pointer gap-2.5 rounded-lg px-2.5"
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    toggleTheme();
                   }}
-                />
-              </Box>
-            </Flex>
-          </>
-        )}
-      </Flex>
+                >
+                  {isDark ? (
+                    <Sun aria-hidden="true" />
+                  ) : (
+                    <Moon aria-hidden="true" />
+                  )}
+                  Toggle theme
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="min-h-11 cursor-pointer gap-2.5 rounded-lg px-2.5"
+                  onSelect={() => setSignOutOpen(true)}
+                >
+                  <LogOut aria-hidden="true" />
+                  Sign out
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  variant="destructive"
+                  className="min-h-11 cursor-pointer gap-2.5 rounded-lg px-2.5"
+                  onSelect={() => setDeleteOpen(true)}
+                >
+                  <Trash2 aria-hidden="true" />
+                  Delete account
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <div className="ml-1 flex items-center gap-1.5">
+              <Button
+                asChild
+                variant="ghost"
+                className="h-11 rounded-full px-4"
+              >
+                <Link href="/login">Log in</Link>
+              </Button>
+              <Button
+                asChild
+                className="bg-brand text-brand-foreground hover:bg-brand/90 h-11 rounded-full px-5"
+              >
+                <Link href="/signup">Sign up</Link>
+              </Button>
+            </div>
+          )}
+        </nav>
+
+        <div className="flex items-center gap-1 md:hidden">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-11 rounded-full"
+            aria-label="Toggle theme"
+            onClick={toggleTheme}
+          >
+            {themeIcon}
+          </Button>
+
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+            <SheetTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-11 rounded-full"
+                aria-label="Open menu"
+              >
+                <Menu aria-hidden="true" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent
+              side="right"
+              showCloseButton={false}
+              className="w-[min(20rem,85vw)] gap-0 p-0"
+            >
+              <SheetClose asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-3 right-3 z-10 size-11 rounded-full"
+                  aria-label="Close menu"
+                >
+                  <X aria-hidden="true" />
+                </Button>
+              </SheetClose>
+              <SheetHeader className="border-b p-4 pr-14 text-left">
+                <SheetTitle className="text-base">Menu</SheetTitle>
+                <SheetDescription className="text-xs text-muted-foreground">
+                  Navigate Slax and manage your account.
+                </SheetDescription>
+              </SheetHeader>
+
+              <nav
+                aria-label="Mobile"
+                className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-3"
+              >
+                {status === "authenticated" ? (
+                  <div className="mb-2 flex items-center gap-3 rounded-xl bg-muted/60 p-3">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand text-sm font-semibold text-brand-foreground">
+                      {initial}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">
+                        {displayName}
+                      </p>
+                      {email ? (
+                        <p className="truncate text-xs text-muted-foreground">
+                          {email}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
+
+                <Link
+                  href="/about"
+                  onClick={closeMobile}
+                  className="flex min-h-11 items-center rounded-xl px-3 text-sm font-medium transition-all duration-200 hover:bg-accent hover:text-accent-foreground active:scale-[0.99] motion-reduce:active:scale-none! focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                >
+                  About
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 text-sm font-medium transition-all duration-200 hover:bg-accent hover:text-accent-foreground active:scale-[0.99] motion-reduce:active:scale-none! focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                >
+                  {isDark ? (
+                    <Sun className="size-4" aria-hidden="true" />
+                  ) : (
+                    <Moon className="size-4" aria-hidden="true" />
+                  )}
+                  Toggle theme
+                </button>
+
+                {status === "loading" ? (
+                  <div className="mt-3 flex flex-col gap-2 border-t pt-4">
+                    <Skeleton className="h-11 w-full rounded-xl" />
+                    <Skeleton className="h-11 w-full rounded-xl" />
+                  </div>
+                ) : status === "authenticated" ? (
+                  <div className="mt-3 flex flex-col gap-1 border-t pt-3">
+                    <Link
+                      href="/dashboard"
+                      onClick={closeMobile}
+                      className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 text-sm font-medium transition-all duration-200 hover:bg-accent hover:text-accent-foreground active:scale-[0.99] motion-reduce:active:scale-none! focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                    >
+                      <LayoutDashboard
+                        className="size-4"
+                        aria-hidden="true"
+                      />
+                      Dashboard
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeMobile();
+                        setSignOutOpen(true);
+                      }}
+                      className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 text-sm font-medium transition-all duration-200 hover:bg-accent hover:text-accent-foreground active:scale-[0.99] motion-reduce:active:scale-none! focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                    >
+                      <LogOut className="size-4" aria-hidden="true" />
+                      Sign out
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeMobile();
+                        setDeleteOpen(true);
+                      }}
+                      className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 text-sm font-medium text-destructive transition-all duration-200 hover:bg-destructive/10 active:scale-[0.99] motion-reduce:active:scale-none! focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                    >
+                      <Trash2 className="size-4" aria-hidden="true" />
+                      Delete account
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-3 flex flex-col gap-2 border-t pt-4">
+                    <Button
+                      asChild
+                      className="h-11 w-full rounded-full"
+                      variant="outline"
+                    >
+                      <Link href="/login" onClick={closeMobile}>
+                        Log in
+                      </Link>
+                    </Button>
+                    <Button
+                      asChild
+                      className="bg-brand text-brand-foreground hover:bg-brand/90 h-11 w-full rounded-full"
+                    >
+                      <Link href="/signup" onClick={closeMobile}>
+                        Sign up
+                      </Link>
+                    </Button>
+                  </div>
+                )}
+              </nav>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
+
       <WarningModal
-        isOpen={isOpen}
-        onClose={onClose}
-        type={"SignOut"}
-        Callback={() => signOut({ callbackUrl: "/signout" })}
+        isOpen={signOutOpen}
+        onClose={() => setSignOutOpen(false)}
+        type="SignOut"
+        Callback={handleSignOut}
       />
       <WarningModal
-        isOpen={delModalIsOpen}
-        onClose={delModalOnClose}
-        type={"DeleteAccount"}
-        Callback={() => DeleteAccount()}
+        isOpen={deleteOpen}
+        onClose={() => {
+          if (!isDeleting) setDeleteOpen(false);
+        }}
+        type="DeleteAccount"
+        Callback={handleDeleteAccount}
+        isLoading={isDeleting}
       />
-      <Loading isOpen={isLoading} onClose={stopLoading} />
-    </Box>
+    </header>
   );
 }

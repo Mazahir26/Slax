@@ -1,208 +1,278 @@
-import {
-  Flex,
-  useDisclosure,
-  useColorMode,
-  Box,
-  Heading,
-  useToast,
-  Stack,
-} from "@chakra-ui/react";
-import Drawer from "../components/drawer";
-import moment from "moment";
+import { useEffect, useRef, useState } from "react";
 import type { NextPage } from "next";
-import { useEffect, useState } from "react";
-import Calender from "../components/Calender";
-import TopBar from "../components/TopBar";
-import AddBirthdayModal from "../components/Modal";
-import { useSession } from "next-auth/react";
-import { event } from "../components/types";
-import Loading from "../components/layout/loading";
-import { Skeleton, SkeletonCircle } from "@chakra-ui/react";
 import Head from "next/head";
 import { useRouter } from "next/router";
+import { useSession } from "next-auth/react";
+import moment from "moment";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
+
+import AddBirthdayModal from "../components/Modal";
+import Calender from "../components/Calender";
+import Drawer from "../components/drawer";
+import TopBar from "../components/TopBar";
+import Loading from "../components/layout/loading";
+import { Skeleton } from "../components/ui/skeleton";
+import type {
+  CalendarView,
+  event,
+  NewBirthday,
+} from "../components/types";
 import {
-  getEvents,
   addEvent as AddEvent,
   deleteEvent as DeleteEvent,
   editEvent as EditEvent,
+  getEvents,
+  syncTimezone,
 } from "../lib/helperFunctions";
 
-const Dashboard: NextPage = ({}) => {
+const Dashboard: NextPage = () => {
   const [events, setEvents] = useState<event[]>([]);
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const router = useRouter();
-  const {
-    isOpen: isDrawerOpen,
-    onOpen: onDrawerOpen,
-    onClose: onDrawerClose,
-  } = useDisclosure();
-  const {
-    isOpen: isLoading,
-    onOpen: setLoading,
-    onClose: stopLoading,
-  } = useDisclosure();
-  const [currentYear, setCurrentYear] = useState(moment());
-  const { data: session, status } = useSession();
-  const { colorMode } = useColorMode();
-  const toast = useToast();
-  ``;
   const [selectedEvent, setSelectedEvent] = useState<event | null>(null);
-  const [view, setView] = useState<"agenda" | "month">("agenda");
+  const [view, setView] = useState<CalendarView>("agenda");
+  const [currentYear, setCurrentYear] = useState(() => moment());
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
 
+  // The timezone is persisted once per mount. The ref keeps React
+  // StrictMode's double effect invocation from firing the request twice.
+  const timezoneRequested = useRef(false);
+  const isMounted = useRef(false);
+
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
   useEffect(() => {
-    if (status === "authenticated") {
-      getEvents({
-        setEvents: setEvents,
-      })
-        .catch((err) => {
-          router.push("/error?error=ServerError");
-          console.log(err);
-        })
-        .finally(() => setIsConnected(true));
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  // Unauthenticated visitors go straight to the login page instead of
+  // landing on a dead-end message.
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      void router.replace("/login");
     }
   }, [status, router]);
 
+  // Persist the browser's IANA timezone once the user is signed in. The API
+  // only writes it when no timezone is stored, so this is a no-op for users
+  // who already have one. Failures stay silent: reminders keep working (with
+  // the server-side fallback) and the dashboard must never be blocked.
+  useEffect(() => {
+    if (status !== "authenticated" || timezoneRequested.current) return;
+    timezoneRequested.current = true;
+
+    let timezone: string;
+    try {
+      timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    } catch (error) {
+      console.error("Could not detect the browser timezone.", error);
+      return;
+    }
+
+    if (!timezone) return;
+
+    syncTimezone(timezone)
+      .then((result) => {
+        if (!isMounted.current || !result?.updated) return;
+        // Prefer the timezone the server actually confirmed/stored. The
+        // detected value is only a fallback for an empty response body.
+        const confirmed = result.timezone || timezone;
+        toast.success("Timezone updated", {
+          description: `Reminders will now arrive shortly after midnight in ${confirmed.replace(
+            /_/g,
+            " "
+          )}.`,
+          duration: 8000,
+        });
+      })
+      .catch((error: unknown) => {
+        console.error("Could not sync the timezone.", error);
+      });
+  }, [status]);
+
+  useEffect(() => {
+    if (status !== "authenticated") return;
+
+    let cancelled = false;
+
+    getEvents({
+      setEvents: (nextEvents) => {
+        if (!cancelled) setEvents(nextEvents);
+      },
+    })
+      .catch((error: unknown) => {
+        console.error(error);
+        toast.error("Couldn't load your birthdays", {
+          description: "Please refresh the page to try again.",
+        });
+      })
+      .finally(() => {
+        if (!cancelled) setIsConnected(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [status]);
+
+  async function handleAddEvent(nextEvent: NewBirthday) {
+    const email = session?.user?.email;
+
+    if (!email) {
+      toast.error("You need to be signed in", {
+        description: "Sign in again and your birthday will be saved.",
+      });
+      throw new Error("No authenticated session.");
+    }
+
+    setIsLoading(true);
+
+    try {
+      const created = await AddEvent({
+        name: nextEvent.name,
+        date: nextEvent.date,
+        color: nextEvent.color,
+        email,
+      });
+
+      setEvents((previous) => [...previous, created]);
+
+      toast.success("Birthday added 🎉", {
+        description: `We will remind you to wish ${created.name} on ${moment(
+          created.date
+        ).format("MMM Do")} every year.`,
+      });
+    } catch (error) {
+      console.error(error);
+      toast.error("Oops, something went wrong!", {
+        description: "We couldn't add that birthday. Please try again.",
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleEditEvent(updatedEvent: event) {
+    if (!session?.user?.email) {
+      toast.error("You need to be signed in", {
+        description: "Sign in again and try once more.",
+      });
+      throw new Error("No authenticated session.");
+    }
+
+    setIsLoading(true);
+
+    try {
+      const nextEvents = await EditEvent(updatedEvent, events);
+      setEvents(nextEvents);
+      setSelectedEvent((previous) =>
+        previous && previous._id === updatedEvent._id
+          ? updatedEvent
+          : previous
+      );
+
+      toast.success("Birthday updated", {
+        description: "Your changes have been saved.",
+      });
+    } catch (error) {
+      console.error(error);
+      toast.error("Oops, something went wrong!", {
+        description: "We couldn't update that birthday. Please try again.",
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleDeleteEvent(id: string) {
+    if (!session?.user?.email) {
+      toast.error("You need to be signed in", {
+        description: "Sign in again and try once more.",
+      });
+      throw new Error("No authenticated session.");
+    }
+
+    setIsLoading(true);
+
+    try {
+      const nextEvents = await DeleteEvent(id, events);
+      setEvents(nextEvents);
+      setSelectedEvent((previous) =>
+        previous && previous._id === id ? null : previous
+      );
+      setIsDrawerOpen(false);
+
+      toast.success("Birthday deleted", {
+        description: "The birthday was removed successfully.",
+      });
+    } catch (error) {
+      console.error(error);
+      toast.error("Oops, something went wrong!", {
+        description: "We couldn't delete that birthday. Please try again.",
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function handleSelectEvent(id: string) {
+    const selected = events.find((item) => item._id === id);
+    if (!selected) return;
+
+    setSelectedEvent(selected);
+    setIsDrawerOpen(true);
+  }
+
+  if (status === "loading") {
+    return (
+      <>
+        <Head>
+          <title>dashboard | Slax </title>
+        </Head>
+        <DashboardSkeleton />
+      </>
+    );
+  }
+
   if (status === "unauthenticated") {
     return (
-      <Flex
-        width={"full"}
-        h={"90vh"}
-        flexDirection={"column"}
-        bg={colorMode == "dark" ? "gray.700" : "gray.100"}
-        justifyContent="center"
-        alignItems={"center"}
-      >
-        <Heading>You need to be authenticated</Heading>
-      </Flex>
+      <>
+        <Head>
+          <title>dashboard | Slax </title>
+        </Head>
+        <div
+          className="flex min-h-[calc(100dvh-4rem)] animate-in items-center justify-center gap-3 px-6 text-muted-foreground duration-300 fade-in motion-reduce:animate-none"
+          role="status"
+          aria-live="polite"
+        >
+          <Loader2
+            className="size-5 animate-spin text-brand"
+            aria-hidden="true"
+          />
+          <p className="text-sm font-medium">Taking you to sign in…</p>
+        </div>
+      </>
     );
   }
 
   if (!isConnected) {
     return (
-      <Stack pt="10" spacing={"6"} px="6">
-        <Flex alignItems={"center"} flexDir={"row"}>
-          <SkeletonCircle height="20" width={"20"} />
-          <Box mx="4" />
-          <Skeleton height="16" width={"full"} />
-        </Flex>
-        <Box my="4" />
-        <Skeleton height="16" />
-        <Skeleton height="16" />
-        <Flex alignItems={"center"} flexDir={"row"}>
-          <SkeletonCircle height="20" width={"20"} />
-          <Box mx="4" />
-          <Skeleton height="16" width={"full"} />
-        </Flex>
-        <Box my="4" />
-        <Skeleton height="16" />
-        <Skeleton height="16" />
-      </Stack>
+      <>
+        <Head>
+          <title>dashboard | Slax </title>
+        </Head>
+        <DashboardSkeleton />
+      </>
     );
-  }
-
-  async function editEvent(event: event) {
-    if (session?.user?.email) {
-      try {
-        setLoading();
-        const res = await EditEvent(event, events);
-        setEvents(res);
-        toast({
-          position: "bottom-left",
-          title: "Birthday Edited .",
-          status: "success",
-          description: "Birthday Edited Successfully",
-          duration: 5000,
-          isClosable: true,
-        });
-      } catch (error) {
-        console.log(error);
-        toast({
-          position: "bottom-left",
-          title: "Oops something went wrong!",
-          status: "error",
-          description: `Try again later..:(`,
-          duration: 5000,
-          isClosable: true,
-        });
-      } finally {
-        stopLoading();
-      }
-    }
-  }
-
-  async function addEvent(event: {
-    name: string;
-    date: moment.Moment;
-    color: string;
-  }) {
-    if (session?.user?.email) {
-      setLoading();
-      AddEvent({
-        name: event.name,
-        date: event.date,
-        color: event.color,
-        email: session.user.email,
-      })
-        .then((eve) => {
-          setEvents([...events, eve]);
-          toast({
-            position: "bottom-left",
-            title: "Birthday Added. 🎉",
-            status: "success",
-            description: `We will remind you to wish ${eve.name} on ${moment(
-              eve.date
-            ).format("MMM Do")} every year`,
-            duration: 5000,
-            isClosable: true,
-          });
-        })
-        .catch((err) => {
-          console.log(err);
-          toast({
-            position: "bottom-left",
-            title: "Oops something went wrong!",
-            status: "error",
-            description: `Try again later..:(`,
-            duration: 5000,
-            isClosable: true,
-          });
-        })
-        .finally(() => {
-          stopLoading();
-        });
-    }
-  }
-
-  async function deleteEvent(id: string) {
-    if (session?.user?.email) {
-      setLoading();
-
-      try {
-        const res = await DeleteEvent(id, events);
-        setEvents(res);
-        toast({
-          position: "bottom-left",
-          title: "Birthday deleted.",
-          status: "success",
-          description: "Birthday Deleted Successfully",
-          duration: 5000,
-          isClosable: true,
-        });
-      } catch (er) {
-        console.log(er);
-        toast({
-          position: "bottom-left",
-          title: "Oops something went wrong!",
-          status: "error",
-          description: `Try again later..:(`,
-          duration: 5000,
-          isClosable: true,
-        });
-      } finally {
-        stopLoading();
-      }
-    }
   }
 
   return (
@@ -210,85 +280,71 @@ const Dashboard: NextPage = ({}) => {
       <Head>
         <title>dashboard | Slax </title>
       </Head>
-      <Flex
-        flexDirection={"column"}
-        bg={colorMode == "dark" ? "gray.700" : "gray.100"}
-        align={"start"}
-        width={"full"}
-        h={"90vh"}
-      >
+
+      <div className="min-h-[calc(100dvh-4rem)] w-full bg-background">
         <TopBar
           view={view}
           setView={setView}
           currentYear={currentYear}
-          onOpen={onOpen}
+          onOpen={() => setIsAddOpen(true)}
           setCurrentYear={setCurrentYear}
         />
-        <Calender
-          onClickAddBirthday={onOpen}
-          view={view}
-          onClickEvent={(id: string) => {
-            const selected = events.find((value) => value._id === id);
-            selected ? setSelectedEvent(selected) : null;
-            onDrawerOpen();
-          }}
-          year={currentYear}
-          events={events}
-        />
-      </Flex>
+
+        <main className="mx-auto w-full max-w-6xl animate-in px-3 pt-5 pb-10 fade-in duration-300 motion-reduce:animate-none sm:px-6 sm:pt-6">
+          <Calender
+            onClickAddBirthday={() => setIsAddOpen(true)}
+            view={view}
+            onClickEvent={handleSelectEvent}
+            year={currentYear}
+            events={events}
+          />
+        </main>
+      </div>
+
       <AddBirthdayModal
-        PushEvent={addEvent}
-        isOpen={isOpen}
-        onClose={onClose}
+        PushEvent={handleAddEvent}
+        isOpen={isAddOpen}
+        onClose={() => setIsAddOpen(false)}
       />
       <Drawer
         event={selectedEvent}
-        onClose={onDrawerClose}
+        onClose={() => setIsDrawerOpen(false)}
         isOpen={isDrawerOpen}
-        onDelete={(id) => deleteEvent(id)}
-        onSave={(event) => editEvent(event)}
+        onDelete={handleDeleteEvent}
+        onSave={handleEditEvent}
       />
-      <Loading isOpen={isLoading} onClose={stopLoading} />
+      <Loading isOpen={isLoading} />
     </>
   );
 };
 
-// export async function getServerSideProps(context: GetServerSidePropsContext) {
-//   try {
-//     const session = await getSession(context);
-//     if (!session?.user?.email) {
-//       return {
-//         props: { isConnected: true, data: [] },
-//       };
-//     }
-//     const cli = await client.connect();
-//     const database = cli.db("Data");
-//     const data = database.collection<eventData>("reminders");
+function DashboardSkeleton() {
+  return (
+    <div
+      className="min-h-[calc(100dvh-4rem)] w-full bg-background"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <span className="sr-only">Loading your birthdays…</span>
+      <div className="mx-auto w-full max-w-6xl space-y-5 px-3 py-4 sm:px-6">
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3">
+          <Skeleton className="h-11 w-40 rounded-full" />
+          <Skeleton className="h-11 w-28 rounded-full" />
+        </div>
 
-//     const cursor = data.find(
-//       {
-//         user: session.user.email,
-//       },
-//       {
-//         projection: { _id: 1, date: 1, name: 1, user: 1, color: 1 },
-//       }
-//     );
-
-//     const propsData = await cursor.toArray();
-//     propsData.map((x) => {
-//       x.date = moment(x.date).toISOString();
-//       x._id = x._id.toString();
-//     });
-//     cli.close();
-//     return {
-//       props: { isConnected: true, data: propsData },
-//     };
-//   } catch (e) {
-//     console.error(e);
-//     return {
-//       props: { isConnected: false, data: [] },
-//     };
-//   }
-// }
+        <div className="space-y-4 pt-2">
+          <Skeleton className="h-8 w-36 rounded-lg" />
+          {[0, 1, 2, 3].map((index) => (
+            <div key={index} className="flex items-center gap-3">
+              <Skeleton className="h-6 w-12 rounded-md" />
+              <Skeleton className="h-16 flex-1 rounded-2xl" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default Dashboard;

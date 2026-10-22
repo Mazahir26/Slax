@@ -1,5 +1,21 @@
-import { Box, Flex, Heading, Text, useColorMode } from "@chakra-ui/react";
+import type { CSSProperties } from "react";
+import { ChevronRight } from "lucide-react";
 import moment from "moment";
+
+/** Pick black or white ink for a pastel birthday color. */
+function getContrast(hexColor: string) {
+  const hex = hexColor.replace("#", "");
+  if (!/^[0-9a-fA-F]{6}$/.test(hex)) return "#111111";
+
+  const red = parseInt(hex.slice(0, 2), 16);
+  const green = parseInt(hex.slice(2, 4), 16);
+  const blue = parseInt(hex.slice(4, 6), 16);
+  const brightness = Math.round(
+    (red * 299 + green * 587 + blue * 114) / 1000
+  );
+
+  return brightness > 125 ? "#111111" : "#ffffff";
+}
 
 export default function Card({
   color,
@@ -18,105 +34,60 @@ export default function Card({
   id: string;
   onClick: (id: string) => void;
 }) {
-  const { colorMode } = useColorMode();
-  return (
-    <Flex
-      alignItems={"center"}
-      justifyContent="space-between"
-      width={"full"}
-      px={["1", "2"]}
-    >
-      {newDate ? (
-        <Flex
-          justifyContent={"space-between"}
-          alignItems="center"
-          alignContent={"center"}
-          flexDirection="column"
-          w={["14", "16", "20"]}
-          mr={["2", "4"]}
-        >
-          <Heading size={"lg"}>{date.format("Do")}</Heading>
-          {moment(date).set("year", currentDate.year()).format("L") ===
-          moment().format("L") ? (
-            <Box p="2" borderRadius={"md"} py="0.5" my="1" bg="brand.100">
-              <Text color={"white"}>Today</Text>
-            </Box>
-          ) : null}
-        </Flex>
-      ) : (
-        <Box w={["14", "16", "20"]} mr={["2", "4"]} />
-      )}
-      <Box
-        flex={1}
-        onClick={() => onClick(id)}
-        as="button"
-        __css={{
-          WebkitFilter: "brightness(100%)",
-        }}
-        _hover={{
-          transform: "scale(1.01)",
-          transition: "all .2s ease-in-out",
-          WebkitFilter: "brightness(90%)",
-        }}
-        _active={{
-          WebkitFilter: "brightness(110%)",
-          transform: "scale(.98)",
-          transition: "all .2s ease-in-out",
-        }}
-        minH={["6", "12"]}
-        bg={colorMode == "dark" ? "gray.600" : color}
-        alignContent={"center"}
-        borderRadius="lg"
-        boxShadow="md"
-        p={["2", "4"]}
-        width={"full"}
-      >
-        <Flex
-          flexDirection={"row"}
-          justifyContent="flex-start"
-          alignItems={"center"}
-        >
-          <Flex
-            flex={1}
-            flexDirection="column"
-            h="full"
-            alignItems="flex-start"
-          >
-            <Text
-              isTruncated
-              color={colorMode == "dark" ? "white" : getContrast(color)}
-              fontSize="xl"
-              fontWeight="bold"
-            >
-              {`${name}'s Birthday`}
-            </Text>
-            <Text
-              color={colorMode == "dark" ? "white" : getContrast(color)}
-              size={"md"}
-            >
-              {`${Math.abs(date.diff(currentDate, "years"))} years old`}
-            </Text>
-          </Flex>
-        </Flex>
-      </Box>
-    </Flex>
-  );
-}
+  const age = Math.abs(date.diff(currentDate, "years"));
+  const isToday = moment(date)
+    .year(currentDate.year())
+    .isSame(moment(), "day");
 
-function getContrast(hexcolor: string) {
-  if (hexcolor.slice(0, 1) === "#") {
-    hexcolor = hexcolor.slice(1);
-  }
-  var aRgbHex = hexcolor.match(/.{1,2}/g);
-  if (aRgbHex) {
-    var Rgb = [
-      parseInt(aRgbHex[0], 16),
-      parseInt(aRgbHex[1], 16),
-      parseInt(aRgbHex[2], 16),
-    ];
-    const brightness = Math.round(
-      (Rgb[0] * 299 + Rgb[1] * 587 + Rgb[2] * 114) / 1000
-    );
-    return brightness > 125 ? "black" : "white";
-  } else return "black";
+  const accentStyle = {
+    "--card-color": color,
+    "--card-ink": getContrast(color),
+  } as CSSProperties;
+
+  return (
+    <div className="flex min-w-0 flex-1 items-start gap-2 sm:gap-3">
+      <div className="flex w-12 shrink-0 flex-col items-center pt-1 text-center sm:w-14">
+        {newDate ? (
+          <>
+            <span className="font-display text-xl leading-none font-semibold text-foreground sm:text-2xl">
+              {date.format("Do")}
+            </span>
+            {isToday ? (
+              <span className="mt-1 rounded-full bg-brand px-2 py-0.5 text-[10px] font-semibold tracking-wide text-brand-foreground uppercase">
+                Today
+              </span>
+            ) : null}
+          </>
+        ) : (
+          <span aria-hidden="true" className="h-6" />
+        )}
+      </div>
+
+      <button
+        type="button"
+        onClick={() => onClick(id)}
+        style={accentStyle}
+        className="group relative flex min-h-16 w-full min-w-0 flex-1 cursor-pointer items-center gap-3 overflow-hidden rounded-2xl border border-black/5 p-3 text-left shadow-sm transition-all duration-200 outline-none hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-0 active:scale-[0.99] motion-reduce:hover:translate-none! motion-reduce:active:scale-none! sm:p-4 dark:border-border dark:bg-card"
+      >
+        <span
+          aria-hidden="true"
+          className="absolute inset-0 bg-[var(--card-color)] transition-opacity duration-200 group-hover:opacity-90 dark:hidden"
+        />
+
+        <div className="relative z-10 min-w-0 flex-1">
+          <p className="truncate text-base font-bold text-[color:var(--card-ink)] sm:text-lg dark:text-card-foreground">
+            {name}&apos;s Birthday
+          </p>
+          <p className="mt-0.5 text-sm text-[color:var(--card-ink)] opacity-80 dark:text-muted-foreground">
+            {age} years old
+          </p>
+        </div>
+
+        <ChevronRight
+          aria-hidden="true"
+          className="relative z-10 size-4 shrink-0 text-[color:var(--card-ink)] opacity-60 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:group-hover:translate-none! dark:text-muted-foreground"
+        />
+      </button>
+    </div>
+  );
 }
